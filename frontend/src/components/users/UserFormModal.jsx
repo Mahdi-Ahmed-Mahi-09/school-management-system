@@ -27,8 +27,11 @@ const emptyValues = {
   must_change_password: true,
 }
 
-/** Create a user (no `user` prop) or edit an existing one's details. */
-export function UserFormModal({ open, onClose, user, onSaved }) {
+/**
+ * Create a user (no `user` prop) or edit an existing one's details.
+ * `defaults` pre-fills a new user, e.g. `{ role: 'teacher' }`.
+ */
+export function UserFormModal({ open, onClose, user, defaults, onSaved }) {
   const isEdit = !!user
   const {
     register,
@@ -48,9 +51,9 @@ export function UserFormModal({ open, onClose, user, onSaved }) {
     reset(
       isEdit
         ? { ...emptyValues, ...user, phone: user.phone ?? '' }
-        : emptyValues,
+        : { ...emptyValues, ...defaults },
     )
-  }, [open, isEdit, user, reset])
+  }, [open, isEdit, user, defaults, reset])
 
   // Suggest a username from the name while creating.
   const suggestUsername = () => {

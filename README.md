@@ -30,6 +30,25 @@ Classora is a full-stack school management platform for **administrators, teache
   - The last active admin can't be demoted or deactivated (enforced with row locks).
   - Restricted fields sent to an endpoint are rejected rather than silently ignored.
 
+### Feature 02 — Admin Dashboard
+
+An admin-only overview at `/`, backed by `GET /api/v1/admin/dashboard`.
+
+- **Real data today:**
+  - Student, teacher and guardian totals, with active and new-this-month counts.
+  - Accounts by role (donut chart).
+  - New accounts per month for the last six months (stacked bar chart).
+  - A recent activity feed.
+- **Not available yet:** classes, sections, academic year, enrollment, class distribution, today's attendance, fee collection, recent admissions and recent notices.
+  - Each of these sections comes back from the API with `"status": "unavailable"` and the module that will provide it. The UI says it isn't set up yet rather than showing a fake zero.
+  - The response format for each section is already defined in `backend/internal/models/dashboard.go`. When a later feature implements its module, it fills in that section.
+- **Activity log:** a new `activity_logs` table records admin actions on users (create, edit, role change, activation and deactivation, password reset).
+  - The migration backfilled one "account created" event for each existing account, from its real creation time.
+- **Quick actions:**
+  - Links to features that exist, for example "Add student account" opens the create form with the Student role already selected.
+  - Actions for future modules are shown disabled. No placeholder pages.
+- **Interface:** loading skeletons, error state with retry, manual refresh, and a responsive layout from mobile to wide desktop. The charting library (Recharts) is only downloaded by admins.
+
 ## Getting started
 
 ### 1. Database
@@ -100,6 +119,7 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | PATCH  | `/users/:id/role`       | Admin             | Assign a role |
 | PATCH  | `/users/:id/status`     | Admin             | Activate or deactivate an account |
 | PUT    | `/users/:id/password`   | Admin             | Reset a password; signs the user out everywhere |
+| GET    | `/admin/dashboard`      | Admin (`dashboard:view_admin`) | Dashboard data; each section is marked `available` or `unavailable` |
 
 ## Project structure
 

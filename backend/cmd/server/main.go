@@ -61,16 +61,19 @@ func run() error {
 	tokenRepo := repository.NewPostgresTokenRepository(pool)
 	tokenMgr := auth.NewTokenManager(cfg.JWTSecret, cfg.JWTIssuer, cfg.JWTTTL, cfg.JWTRememberTTL)
 	authSvc := service.NewAuthService(userRepo, tokenRepo, tokenMgr, cfg.BcryptCost)
-	userSvc := service.NewUserService(userRepo, cfg.BcryptCost)
+	activityRepo := repository.NewPostgresActivityRepository(pool)
+	userSvc := service.NewUserService(userRepo, activityRepo, cfg.BcryptCost)
+	dashboardSvc := service.NewDashboardService(repository.NewPostgresDashboardRepository(pool), cfg.Timezone)
 
 	engine := router.New(router.Deps{
-		AuthService:     authSvc,
-		UserService:     userSvc,
-		Cookie:          handler.CookieConfig{Name: cfg.CookieName, Secure: cfg.CookieSecure, Domain: cfg.CookieDomain},
-		AllowedOrigins:  cfg.CORSAllowedOrigins,
-		LoginRateLimit:  cfg.LoginRateLimit,
-		LoginRateWindow: cfg.LoginRateWindow,
-		HealthCheck:     pool.Ping,
+		AuthService:      authSvc,
+		UserService:      userSvc,
+		DashboardService: dashboardSvc,
+		Cookie:           handler.CookieConfig{Name: cfg.CookieName, Secure: cfg.CookieSecure, Domain: cfg.CookieDomain},
+		AllowedOrigins:   cfg.CORSAllowedOrigins,
+		LoginRateLimit:   cfg.LoginRateLimit,
+		LoginRateWindow:  cfg.LoginRateWindow,
+		HealthCheck:      pool.Ping,
 	})
 
 	go purgeRevokedTokens(ctx, authSvc)

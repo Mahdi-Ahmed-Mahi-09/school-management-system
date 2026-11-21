@@ -34,14 +34,17 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 	users := memrepo.NewUserRepo()
 	tm := auth.NewTokenManager("router-test-secret-at-least-32-chars!!", "classora", time.Hour, 24*time.Hour)
 	authSvc := service.NewAuthService(users, memrepo.NewTokenRepo(), tm, 4)
-	userSvc := service.NewUserService(users, 4)
+	activity := memrepo.NewActivityRepo()
+	userSvc := service.NewUserService(users, activity, 4)
+	dashboardSvc := service.NewDashboardService(&memrepo.DashboardRepo{Users: users, Activity: activity}, time.UTC)
 	s := &testServer{t: t, users: users, tm: tm, engine: New(Deps{
-		AuthService:     authSvc,
-		UserService:     userSvc,
-		Cookie:          handler.CookieConfig{Name: cookieName},
-		AllowedOrigins:  []string{"http://localhost:5173"},
-		LoginRateLimit:  loginLimit,
-		LoginRateWindow: time.Minute,
+		AuthService:      authSvc,
+		UserService:      userSvc,
+		DashboardService: dashboardSvc,
+		Cookie:           handler.CookieConfig{Name: cookieName},
+		AllowedOrigins:   []string{"http://localhost:5173"},
+		LoginRateLimit:   loginLimit,
+		LoginRateWindow:  time.Minute,
 	})}
 	for _, u := range []struct {
 		name string
@@ -391,5 +394,57 @@ func TestCORSAndSecurityHeaders(t *testing.T) {
 	}
 	if res := s.do(http.MethodGet, "/api/v1/nope", "", nil); res.status != http.StatusNotFound || res.body["success"] != false {
 		t.Errorf("not found envelope: %d %s", res.status, res.raw)
+	}
+}
+
+func TestAdminDashboardAuthorization(t *testing.T) {
+	s := newTestServer(t, 100)
+
+	if res := s.do(http.MethodGet, "/api/v1/admin/dashboard", "", nil); res.status != http.StatusUnauthorized || res.errorCode() != "AUTH_REQUIRED" {
+		t.Errorf("anonymous: %d %s", res.status, res.raw)
+	}
+	for _, name := range []string{"teacher", "student", "guardian"} {
+		if res := s.do(http.MethodGet, "/api/v1/admin/dashboard", s.login(name), nil); res.status != http.StatusForbidden {
+			t.Errorf("%s: got %d, want 403", name, res.status)
+		}
+	}
+
+	cookie := s.login("admin")
+	// Generate one real activity entry.
+	s.do(http.MethodPost, "/api/v1/users", cookie, map[string]any{
+		"username": "dash.student", "email": "dash.student@classora.test", "first_name": "Dash", "last_name": "Student",
+		"role": "student", "password": "Welcome123",
+	})
+
+	res := s.do(http.MethodGet, "/api/v1/admin/dashboard", cookie, nil)
+	if res.status != http.StatusOK {
+		t.Fatalf("admin: %d %s", res.status, res.raw)
+	}
+	for _, leak := range []string{"password_hash", "$2a$", "token_version", "@classora.test"} {
+		if strings.Contains(res.raw, leak) {
+			t.Errorf("dashboard response leaks %q", leak)
+		}
+	}
+	data := res.data()
+	overview := data["overview"].(map[string]any)
+	students := overview["students"].(map[string]any)
+	if students["status"] != "available" || students["data"].(map[string]any)["total"] != float64(2) {
+		t.Errorf("students section: %v", students)
+	}
+	classes := overview["classes"].(map[string]any)
+	if classes["status"] != "unavailable" || classes["data"] != nil || classes["module"] == nil {
+		t.Errorf("classes section must be unavailable: %v", classes)
+	}
+	attendance := data["attendance"].(map[string]any)
+	if attendance["status"] != "unavailable" || attendance["data"] != nil {
+		t.Errorf("attendance must be unavailable: %v", attendance)
+	}
+	activity := data["recent_activity"].(map[string]any)
+	items, _ := activity["data"].([]any)
+	if activity["status"] != "available" || len(items) != 1 {
+		t.Errorf("activity: %v", activity)
+	}
+	if res.header.Get("Cache-Control") != "no-store" {
+		t.Error("dashboard response should not be cached")
 	}
 }

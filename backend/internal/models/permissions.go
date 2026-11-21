@@ -14,6 +14,8 @@ const (
 	PermUsersManageRoles   Permission = "users:manage_roles"
 	PermUsersManageStatus  Permission = "users:manage_status"
 	PermUsersResetPassword Permission = "users:reset_password"
+
+	PermDashboardAdmin Permission = "dashboard:view_admin"
 )
 
 // selfService permissions are granted to every authenticated role.
@@ -26,6 +28,7 @@ var userAdministration = []Permission{
 	PermUsersManageRoles,
 	PermUsersManageStatus,
 	PermUsersResetPassword,
+	PermDashboardAdmin,
 }
 
 // rolePermissions is the single source of truth for role-based access control.

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, KeyRound, PencilLine, ShieldCheck, UserCheck, UserX } from 'lucide-react'
 import { getErrorMessage } from '../../api/client'
@@ -32,7 +32,10 @@ export function useUserActions({ onChanged }) {
   const [statusSaving, setStatusSaving] = useState(false)
 
   const close = () => setDialog((d) => ({ ...d, type: null }))
-  const open = (type, user = null) => setDialog({ type, user })
+  // Stable callbacks: pages use these inside effects.
+  const open = useCallback((type, user = null, defaults = null) => setDialog({ type, user, defaults }), [])
+  const openCreate = useCallback((defaults) => open('create', null, defaults ?? null), [open])
+  const openEdit = useCallback((u) => open('edit', u), [open])
 
   const handleSaved = (saved, kind) => {
     close()
@@ -86,7 +89,13 @@ export function useUserActions({ onChanged }) {
 
   const modals = (
     <>
-      <UserFormModal open={dialog.type === 'create' || dialog.type === 'edit'} onClose={close} user={dialog.type === 'edit' ? target : null} onSaved={handleSaved} />
+      <UserFormModal
+        open={dialog.type === 'create' || dialog.type === 'edit'}
+        onClose={close}
+        user={dialog.type === 'edit' ? target : null}
+        defaults={dialog.type === 'create' ? dialog.defaults : null}
+        onSaved={handleSaved}
+      />
       <ChangeRoleModal key={`${target?.id}-${dialog.type === 'role'}`} open={dialog.type === 'role'} onClose={close} user={target} onSaved={handleSaved} />
       <ResetPasswordModal open={dialog.type === 'password'} onClose={close} user={target} onSaved={handleSaved} />
       <ConfirmDialog
@@ -107,5 +116,5 @@ export function useUserActions({ onChanged }) {
     </>
   )
 
-  return { menuItems, modals, openCreate: () => open('create'), openEdit: (u) => open('edit', u), open }
+  return { menuItems, modals, openCreate, openEdit, open }
 }

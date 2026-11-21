@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	// Embed the IANA timezone database so APP_TIMEZONE works on every OS (incl. Windows).
+	_ "time/tzdata"
 
 	"github.com/joho/godotenv"
 )
@@ -33,6 +35,9 @@ type Config struct {
 
 	LoginRateLimit  int
 	LoginRateWindow time.Duration
+
+	// Timezone is the school's local timezone, used for "today" and "this month".
+	Timezone *time.Location
 }
 
 // IsProduction reports whether the app runs in production mode.
@@ -76,6 +81,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.LoginRateLimit, err = getInt("LOGIN_RATE_LIMIT", 10); err != nil {
 		return nil, err
+	}
+	if cfg.Timezone, err = time.LoadLocation(getEnv("APP_TIMEZONE", "UTC")); err != nil || cfg.Timezone.String() == "Local" {
+		return nil, errors.New("APP_TIMEZONE must be an IANA timezone such as Asia/Dhaka or UTC")
 	}
 
 	if err := cfg.validate(); err != nil {

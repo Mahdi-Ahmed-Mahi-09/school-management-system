@@ -22,12 +22,13 @@ const maxBodyBytes = 1 << 20 // 1 MiB
 
 // Deps are the collaborators the router needs.
 type Deps struct {
-	AuthService     *service.AuthService
-	UserService     *service.UserService
-	Cookie          handler.CookieConfig
-	AllowedOrigins  []string
-	LoginRateLimit  int
-	LoginRateWindow time.Duration
+	AuthService      *service.AuthService
+	UserService      *service.UserService
+	DashboardService *service.DashboardService
+	Cookie           handler.CookieConfig
+	AllowedOrigins   []string
+	LoginRateLimit   int
+	LoginRateWindow  time.Duration
 	// HealthCheck verifies dependencies such as the database. Optional.
 	HealthCheck func(ctx context.Context) error
 }
@@ -55,6 +56,7 @@ func New(d Deps) *gin.Engine {
 	authH := handler.NewAuthHandler(d.AuthService, d.Cookie)
 	profileH := handler.NewProfileHandler(d.UserService, d.AuthService, authH)
 	userH := handler.NewUserHandler(d.UserService)
+	dashboardH := handler.NewDashboardHandler(d.DashboardService)
 	loginLimiter := middleware.NewRateLimiter(d.LoginRateLimit, d.LoginRateWindow)
 
 	api := r.Group("/api/v1", middleware.CSRFGuard())
@@ -95,6 +97,10 @@ func New(d Deps) *gin.Engine {
 	users.PATCH("/:id/role", middleware.RequirePermission(models.PermUsersManageRoles), userH.ChangeRole)
 	users.PATCH("/:id/status", middleware.RequirePermission(models.PermUsersManageStatus), userH.ChangeStatus)
 	users.PUT("/:id/password", middleware.RequirePermission(models.PermUsersResetPassword), userH.ResetPassword)
+
+	// Admin dashboard: admin role AND the dashboard permission are both required.
+	admin := protected.Group("/admin", middleware.RequireRoles(models.RoleAdmin))
+	admin.GET("/dashboard", middleware.RequirePermission(models.PermDashboardAdmin), dashboardH.Admin)
 
 	return r
 }

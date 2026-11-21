@@ -17,6 +17,11 @@ export const profileApi = {
   changePassword: (payload) => api.put('/profile/password', payload).then(unwrap),
 }
 
+export const dashboardApi = {
+  /** Resolves to the admin dashboard payload (see backend models/dashboard.go). */
+  admin: () => api.get('/admin/dashboard').then(unwrap),
+}
+
 export const usersApi = {
   /** Resolves to `{ users, meta }`. */
   list: (params, { signal } = {}) =>

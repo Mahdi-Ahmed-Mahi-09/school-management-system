@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/google/uuid"
@@ -96,12 +98,40 @@ type ChangeStatusInput struct {
 // UserService implements user administration and self-service profile logic.
 type UserService struct {
 	users      repository.UserRepository
+	activity   repository.ActivityRepository
 	bcryptCost int
 }
 
-// NewUserService creates a UserService.
-func NewUserService(users repository.UserRepository, bcryptCost int) *UserService {
-	return &UserService{users: users, bcryptCost: bcryptCost}
+// NewUserService creates a UserService. activity may be nil to disable
+// activity logging.
+func NewUserService(users repository.UserRepository, activity repository.ActivityRepository, bcryptCost int) *UserService {
+	return &UserService{users: users, activity: activity, bcryptCost: bcryptCost}
+}
+
+// record appends an administrative action to the activity log. Logging is
+// best-effort: a failure is reported but never undoes the completed action.
+func (s *UserService) record(ctx context.Context, actor *models.User, action string, target *models.User, summary string, metadata map[string]any) {
+	if s.activity == nil {
+		return
+	}
+	entry := models.ActivityEntry{
+		ActorID:    &actor.ID,
+		Action:     action,
+		EntityType: "user",
+		EntityID:   &target.ID,
+		Summary:    summary,
+		Metadata:   metadata,
+	}
+	if err := s.activity.Record(ctx, entry); err != nil {
+		slog.Warn("could not record activity", "action", action, "target", target.ID, "error", err)
+	}
+}
+
+func roleLabel(r models.Role) string {
+	if r == "" {
+		return ""
+	}
+	return strings.ToUpper(string(r[:1])) + string(r[1:])
 }
 
 func mapRepoError(err error) error {
@@ -245,6 +275,9 @@ func (s *UserService) Create(ctx context.Context, actor *models.User, in CreateU
 	if err != nil {
 		return nil, mapRepoError(err)
 	}
+	s.record(ctx, actor, models.ActivityUserCreated, created,
+		fmt.Sprintf("Created %s account for %s", created.Role, created.FullName()),
+		map[string]any{"role": created.Role, "status": created.Status})
 	return created, nil
 }
 
@@ -271,6 +304,8 @@ func (s *UserService) Update(ctx context.Context, actor *models.User, id uuid.UU
 	if err != nil {
 		return nil, mapRepoError(err)
 	}
+	s.record(ctx, actor, models.ActivityUserUpdated, updated,
+		fmt.Sprintf("Updated account details for %s", updated.FullName()), nil)
 	return updated, nil
 }
 
@@ -283,9 +318,18 @@ func (s *UserService) ChangeRole(ctx context.Context, actor *models.User, id uui
 	if actor.ID == id {
 		return nil, apperror.Forbidden("You can't change your own role.")
 	}
+	before, err := s.users.GetByID(ctx, id)
+	if err != nil {
+		return nil, mapRepoError(err)
+	}
 	updated, err := s.users.UpdateRole(ctx, id, role, actor.ID)
 	if err != nil {
 		return nil, mapRepoError(err)
+	}
+	if before.Role != updated.Role {
+		s.record(ctx, actor, models.ActivityUserRoleChanged, updated,
+			fmt.Sprintf("Changed %s's role from %s to %s", updated.FullName(), roleLabel(before.Role), roleLabel(updated.Role)),
+			map[string]any{"from": before.Role, "to": updated.Role})
 	}
 	return updated, nil
 }
@@ -299,9 +343,22 @@ func (s *UserService) ChangeStatus(ctx context.Context, actor *models.User, id u
 	if actor.ID == id {
 		return nil, apperror.Forbidden("You can't change the status of your own account.")
 	}
+	before, err := s.users.GetByID(ctx, id)
+	if err != nil {
+		return nil, mapRepoError(err)
+	}
 	updated, err := s.users.UpdateStatus(ctx, id, status, actor.ID)
 	if err != nil {
 		return nil, mapRepoError(err)
+	}
+	if before.Status != updated.Status {
+		verb := "Activated"
+		if updated.Status == models.StatusInactive {
+			verb = "Deactivated"
+		}
+		s.record(ctx, actor, models.ActivityUserStatusChanged, updated,
+			fmt.Sprintf("%s %s's account", verb, updated.FullName()),
+			map[string]any{"from": before.Status, "to": updated.Status})
 	}
 	return updated, nil
 }
@@ -327,6 +384,9 @@ func (s *UserService) ResetPassword(ctx context.Context, actor *models.User, id 
 	if err != nil {
 		return nil, mapRepoError(err)
 	}
+	s.record(ctx, actor, models.ActivityUserPasswordReset, updated,
+		fmt.Sprintf("Reset the password for %s", updated.FullName()),
+		map[string]any{"must_change_password": in.MustChangePassword})
 	return updated, nil
 }
 

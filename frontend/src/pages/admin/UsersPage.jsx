@@ -28,13 +28,14 @@ import { cn, formatDate, formatRelative } from '../../lib/utils'
 
 const PAGE_SIZE = 10
 
+/** Debounced copy of value, plus a setter to update it immediately. */
 function useDebounced(value, delay = 300) {
   const [debounced, setDebounced] = useState(value)
   useEffect(() => {
     const id = setTimeout(() => setDebounced(value), delay)
     return () => clearTimeout(id)
   }, [value, delay])
-  return debounced
+  return [debounced, setDebounced]
 }
 
 function ActionsMenu({ user, items }) {
@@ -97,7 +98,7 @@ export default function UsersPage() {
   const { user: me, can } = useAuth()
   const [params, setParams] = useSearchParams()
   const [searchInput, setSearchInput] = useState(params.get('q') ?? '')
-  const search = useDebounced(searchInput.trim())
+  const [search, setSearchNow] = useDebounced(searchInput.trim())
 
   const role = params.get('role') ?? ''
   const status = params.get('status') ?? ''
@@ -109,31 +110,33 @@ export default function UsersPage() {
   const [stats, setStats] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
 
+  // React Router's functional setSearchParams computes from the params of the
+  // current render, so two updates in the same tick would overwrite each other.
+  // Track the latest params in a ref so consecutive updates compose.
+  const latestParams = useRef(params)
+  useEffect(() => {
+    latestParams.current = params
+  }, [params])
+
   const updateParams = useCallback(
     (changes, { resetPage = true } = {}) => {
-      setParams(
-        (prev) => {
-          const next = new URLSearchParams(prev)
-          for (const [k, v] of Object.entries(changes)) {
-            if (v === '' || v == null) next.delete(k)
-            else next.set(k, String(v))
-          }
-          if (resetPage) next.delete('page')
-          return next
-        },
-        { replace: true },
-      )
+      const next = new URLSearchParams(latestParams.current)
+      for (const [k, v] of Object.entries(changes)) {
+        if (v === '' || v == null) next.delete(k)
+        else next.set(k, String(v))
+      }
+      if (resetPage) next.delete('page')
+      latestParams.current = next
+      setParams(next, { replace: true })
     },
     [setParams],
   )
 
-  // Keep the debounced search in the URL.
-  const firstSearch = useRef(true)
+  // Keep the debounced search in the URL — only when it actually changes.
+  const lastSearch = useRef(search)
   useEffect(() => {
-    if (firstSearch.current) {
-      firstSearch.current = false
-      return
-    }
+    if (search === lastSearch.current) return
+    lastSearch.current = search
     updateParams({ q: search })
   }, [search, updateParams])
 
@@ -171,13 +174,22 @@ export default function UsersPage() {
   const actions = useUserActions({ onChanged: refresh })
   const { openCreate } = actions
 
-  // Support deep links such as /users?create=1 from the dashboard.
+  // Support deep links from the dashboard: /users?create=1 or /users?create=<role>.
+  // Each link is handled once, even if the effect re-runs before the URL updates.
+  const createParam = params.get('create')
+  const handledCreate = useRef(null)
   useEffect(() => {
-    if (params.get('create') === '1' && can(PERMISSIONS.USERS_CREATE)) {
-      openCreate()
-      updateParams({ create: '' }, { resetPage: false })
+    if (!createParam) {
+      handledCreate.current = null
+      return
     }
-  }, [params, can, openCreate, updateParams])
+    if (handledCreate.current === createParam) return
+    handledCreate.current = createParam
+    if (can(PERMISSIONS.USERS_CREATE)) {
+      openCreate(ROLES.includes(createParam) ? { role: createParam } : undefined)
+    }
+    updateParams({ create: '' }, { resetPage: false })
+  }, [createParam, can, openCreate, updateParams])
 
   const onSort = (field) => {
     const nextOrder = sort === field ? (order === 'asc' ? 'desc' : 'asc') : field === 'created_at' || field === 'last_login_at' ? 'desc' : 'asc'
@@ -187,6 +199,8 @@ export default function UsersPage() {
   const hasFilters = !!(params.get('q') || role || status)
   const clearFilters = () => {
     setSearchInput('')
+    // Reset the debounced value too, so re-typing the same term is detected.
+    setSearchNow('')
     updateParams({ q: '', role: '', status: '' })
   }
 
@@ -199,7 +213,7 @@ export default function UsersPage() {
         description="Manage every account in your school — create users, assign roles and control access."
         actions={
           can(PERMISSIONS.USERS_CREATE) && (
-            <Button icon={UserPlus} onClick={openCreate}>
+            <Button icon={UserPlus} onClick={() => openCreate()}>
               Add user
             </Button>
           )
@@ -270,7 +284,7 @@ export default function UsersPage() {
               description="Add your first teacher, student or guardian to get started."
               action={
                 can(PERMISSIONS.USERS_CREATE) && (
-                  <Button size="sm" icon={UserPlus} onClick={openCreate}>
+                  <Button size="sm" icon={UserPlus} onClick={() => openCreate()}>
                     Add user
                   </Button>
                 )

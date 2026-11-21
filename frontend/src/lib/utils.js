@@ -8,6 +8,49 @@ export function initials(user) {
   return (first + last).toUpperCase() || user?.username?.[0]?.toUpperCase() || '?'
 }
 
+const numberFormat = new Intl.NumberFormat()
+const monthShort = new Intl.DateTimeFormat(undefined, { month: 'short' })
+const monthLong = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' })
+const longDate = new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+/** Locale-formatted integer, or an em dash when the value is missing. */
+export const formatNumber = (value) => (value == null ? '—' : numberFormat.format(value))
+
+/** Percentage of part in total, rounded; null when total is zero. */
+export const percent = (part, total) => (total > 0 ? Math.round((part / total) * 100) : null)
+
+/** "2026-11" -> "Nov" (short) or "November 2026" (long). */
+export function formatMonth(key, style = 'short') {
+  const [y, m] = key.split('-').map(Number)
+  const date = new Date(y, m - 1, 1)
+  return (style === 'long' ? monthLong : monthShort).format(date)
+}
+
+/** "Sunday, 22 November 2026". */
+export const formatLongDate = (date = new Date()) => longDate.format(date)
+
+/** Formats a decimal string amount in a currency, e.g. ("1250.50", "BDT"). */
+export function formatCurrency(amount, currency) {
+  const value = Number(amount)
+  if (!Number.isFinite(value)) return '—'
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 0 }).format(value)
+  } catch {
+    return `${numberFormat.format(value)} ${currency ?? ''}`.trim()
+  }
+}
+
+/** Compact currency for chart axes, e.g. "BDT 140K". */
+export function formatCurrencyCompact(amount, currency) {
+  const value = Number(amount)
+  if (!Number.isFinite(value)) return ''
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency, notation: 'compact', maximumFractionDigits: 1 }).format(value)
+  } catch {
+    return new Intl.NumberFormat(undefined, { notation: 'compact' }).format(value)
+  }
+}
+
 const dateFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
   day: 'numeric',

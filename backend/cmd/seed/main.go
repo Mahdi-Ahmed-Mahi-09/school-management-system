@@ -59,6 +59,7 @@ func run() error {
 	}
 
 	repo := repository.NewPostgresUserRepository(pool)
+	activity := repository.NewPostgresActivityRepository(pool)
 	for _, d := range demoUsers {
 		if _, err := repo.GetByIdentifier(ctx, d.email); err == nil {
 			fmt.Printf("exists   %-9s %s\n", d.role, d.email)
@@ -70,7 +71,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		_, err = repo.Create(ctx, &models.User{
+		created, err := repo.Create(ctx, &models.User{
 			Username:     d.username,
 			Email:        d.email,
 			FirstName:    d.first,
@@ -84,6 +85,16 @@ func run() error {
 			continue
 		}
 		if err != nil {
+			return err
+		}
+		// Recorded with no actor: the seeder is the system, not a user.
+		if err := activity.Record(ctx, models.ActivityEntry{
+			Action:     models.ActivityUserCreated,
+			EntityType: "user",
+			EntityID:   &created.ID,
+			Summary:    fmt.Sprintf("Created %s account for %s", created.Role, created.FullName()),
+			Metadata:   map[string]any{"role": created.Role, "seeded": true},
+		}); err != nil {
 			return err
 		}
 		fmt.Printf("created  %-9s %s\n", d.role, d.email)

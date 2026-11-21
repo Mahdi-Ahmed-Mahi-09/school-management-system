@@ -53,6 +53,7 @@ export const PERMISSIONS = {
   USERS_MANAGE_ROLES: 'users:manage_roles',
   USERS_MANAGE_STATUS: 'users:manage_status',
   USERS_RESET_PASSWORD: 'users:reset_password',
+  DASHBOARD_ADMIN: 'dashboard:view_admin',
 }
 
 export const PERMISSION_LABELS = {
@@ -65,4 +66,5 @@ export const PERMISSION_LABELS = {
   'users:manage_roles': 'Assign roles to users',
   'users:manage_status': 'Activate and deactivate accounts',
   'users:reset_password': 'Reset user passwords',
+  'dashboard:view_admin': 'View the school-wide admin dashboard',
 }

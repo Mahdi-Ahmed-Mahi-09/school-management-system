@@ -31,7 +31,7 @@ func newFixture(t *testing.T) *fixture {
 		ctx:   context.Background(),
 		users: users,
 		auth:  NewAuthService(users, memrepo.NewTokenRepo(), tm, cost),
-		svc:   NewUserService(users, cost),
+		svc:   NewUserService(users, nil, cost),
 	}
 	f.admin = f.seed(t, "admin", models.RoleAdmin, "Admin12345")
 	return f
