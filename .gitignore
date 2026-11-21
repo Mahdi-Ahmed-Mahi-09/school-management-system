@@ -1,0 +1,17 @@
+# Environment files with secrets
+.env
+.env.*
+!.env.example
+
+# Backend build output
+backend/bin/
+*.exe
+*.test
+coverage.out
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
