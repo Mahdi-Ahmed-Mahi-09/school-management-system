@@ -153,8 +153,8 @@ type StudentStats struct {
 	AdmittedThisMonth int `json:"admitted_this_month"`
 }
 
-// StudentPhoto is a stored profile photo.
-type StudentPhoto struct {
+// Photo is a stored profile photo (students, teachers).
+type Photo struct {
 	ContentType string
 	Data        []byte
 	UpdatedAt   time.Time

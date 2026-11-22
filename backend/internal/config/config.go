@@ -38,6 +38,8 @@ type Config struct {
 
 	// Timezone is the school's local timezone, used for "today" and "this month".
 	Timezone *time.Location
+	// SalaryCurrency is the ISO 4217 code used to display teacher salaries.
+	SalaryCurrency string
 }
 
 // IsProduction reports whether the app runs in production mode.
@@ -58,6 +60,7 @@ func Load() (*Config, error) {
 		CookieName:         getEnv("SESSION_COOKIE_NAME", "classora_session"),
 		CookieDomain:       os.Getenv("SESSION_COOKIE_DOMAIN"),
 		CORSAllowedOrigins: splitList(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:5173")),
+		SalaryCurrency:     strings.ToUpper(getEnv("SALARY_CURRENCY", "BDT")),
 	}
 
 	var err error
@@ -105,6 +108,9 @@ func (c *Config) validate() error {
 	}
 	if c.JWTTTL <= 0 || c.JWTRememberTTL <= 0 {
 		problems = append(problems, "JWT_TTL and JWT_REMEMBER_TTL must be positive")
+	}
+	if len(c.SalaryCurrency) != 3 {
+		problems = append(problems, "SALARY_CURRENCY must be a 3-letter ISO 4217 code")
 	}
 	if c.LoginRateLimit <= 0 || c.LoginRateWindow <= 0 {
 		problems = append(problems, "LOGIN_RATE_LIMIT and LOGIN_RATE_WINDOW must be positive")

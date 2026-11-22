@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronsUpDown, GraduationCap, KeyRound, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
+import { ChevronsUpDown, GraduationCap, KeyRound, Presentation, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
 import { Wordmark } from '../components/brand/Logo'
 import { Alert, Avatar } from '../components/ui/Display'
 import { Menu } from '../components/ui/Menu'
+import { Spinner } from '../components/ui/Spinner'
 import { useToast } from '../components/ui/Toast'
 import { useAuth } from '../hooks/useAuth'
 import { PERMISSIONS, ROLE_META } from '../lib/roles'
@@ -19,7 +20,10 @@ const NAV_SECTIONS = [
   },
   {
     label: 'School',
-    items: [{ to: '/students', label: 'Students', icon: GraduationCap, permission: PERMISSIONS.STUDENTS_READ }],
+    items: [
+      { to: '/students', label: 'Students', icon: GraduationCap, permission: PERMISSIONS.STUDENTS_READ },
+      { to: '/teachers', label: 'Teachers', icon: Presentation, permission: PERMISSIONS.TEACHERS_READ },
+    ],
   },
   {
     label: 'Administration',
@@ -204,7 +208,15 @@ export default function AppLayout() {
               An administrator set a temporary password for your account. Choose your own to keep your account secure.
             </Alert>
           )}
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="flex min-h-[50vh] items-center justify-center" role="status" aria-label="Loading page">
+                <Spinner className="size-5 text-brand-600" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

@@ -65,12 +65,14 @@ func run() error {
 	userSvc := service.NewUserService(userRepo, activityRepo, cfg.BcryptCost)
 	dashboardSvc := service.NewDashboardService(repository.NewPostgresDashboardRepository(pool), cfg.Timezone)
 	studentSvc := service.NewStudentService(repository.NewPostgresStudentRepository(pool), activityRepo, cfg.Timezone)
+	teacherSvc := service.NewTeacherService(repository.NewPostgresTeacherRepository(pool), activityRepo, cfg.Timezone, cfg.SalaryCurrency)
 
 	engine := router.New(router.Deps{
 		AuthService:      authSvc,
 		UserService:      userSvc,
 		DashboardService: dashboardSvc,
 		StudentService:   studentSvc,
+		TeacherService:   teacherSvc,
 		Cookie:           handler.CookieConfig{Name: cfg.CookieName, Secure: cfg.CookieSecure, Domain: cfg.CookieDomain},
 		AllowedOrigins:   cfg.CORSAllowedOrigins,
 		LoginRateLimit:   cfg.LoginRateLimit,

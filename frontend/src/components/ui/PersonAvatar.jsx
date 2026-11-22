@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { cn } from '../../lib/utils'
-import { Avatar } from '../ui/Display'
+import { Avatar } from './Display'
 
 const sizes = { sm: 'size-8', md: 'size-10', lg: 'size-14', xl: 'size-24' }
 
@@ -9,10 +9,13 @@ function nameParts(fullName = '') {
   return { first_name: parts[0] ?? '', last_name: parts.length > 1 ? parts[parts.length - 1] : '' }
 }
 
-/** Student photo (served by the authenticated API) with an initials fallback. */
-export function StudentAvatar({ student, size = 'md', className }) {
+/**
+ * Photo for a person record (student, teacher) served by the authenticated
+ * API, with an initials fallback. `person` needs { id, full_name, photo_url }.
+ */
+export function PersonAvatar({ person, size = 'md', className }) {
   const [failedUrl, setFailedUrl] = useState(null)
-  const url = student?.photo_url
+  const url = person?.photo_url
   if (url && failedUrl !== url) {
     return (
       <img
@@ -24,6 +27,6 @@ export function StudentAvatar({ student, size = 'md', className }) {
       />
     )
   }
-  const user = { id: student?.id, ...nameParts(student?.full_name) }
+  const user = { id: person?.id, ...nameParts(person?.full_name) }
   return <Avatar user={user} size={size} className={cn(size === 'xl' && 'size-24 text-3xl', className)} />
 }

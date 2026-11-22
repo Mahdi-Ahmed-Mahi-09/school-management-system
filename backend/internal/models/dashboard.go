@@ -34,6 +34,8 @@ var (
 		Description: "Academic years, classes and sections."}
 	ModuleStudents = ModuleInfo{Key: "students", Name: "Student Management",
 		Description: "Student admissions, enrollment and class placement."}
+	ModuleTeachers = ModuleInfo{Key: "teachers", Name: "Teacher Management",
+		Description: "Teacher profiles, qualifications and employment records."}
 	ModuleAttendance = ModuleInfo{Key: "attendance", Name: "Attendance Management",
 		Description: "Daily student attendance records."}
 	ModuleFees = ModuleInfo{Key: "fees", Name: "Fee Management",

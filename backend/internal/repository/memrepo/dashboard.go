@@ -55,6 +55,7 @@ type DashboardRepo struct {
 	Users    *UserRepo
 	Activity *ActivityRepo
 	Students *StudentRepo // optional
+	Teachers *TeacherRepo // optional
 }
 
 var _ repository.DashboardRepository = (*DashboardRepo)(nil)
@@ -139,6 +140,7 @@ func (r *DashboardRepo) AdminSnapshot(_ context.Context, q repository.DashboardQ
 		snap.RecentActivity = append(snap.RecentActivity, item)
 	}
 	r.studentSnapshot(q, snap)
+	r.teacherSnapshot(q, snap)
 	return snap, nil
 }
 
@@ -181,6 +183,24 @@ func (r *DashboardRepo) studentSnapshot(q repository.DashboardQuery, snap *repos
 				ID: s.ID, FullName: s.FullName, AdmissionNumber: s.AdmissionNumber,
 				AdmittedOn: s.AdmissionDate.Format(models.DateLayout), Status: string(s.Status), PhotoURL: s.PhotoURL(),
 			})
+		}
+	}
+}
+
+func (r *DashboardRepo) teacherSnapshot(q repository.DashboardQuery, snap *repository.DashboardSnapshot) {
+	if r.Teachers == nil {
+		return
+	}
+	current := q.MonthStarts[len(q.MonthStarts)-1].Format("2006-01")
+	for _, t := range r.Teachers.All() {
+		snap.Teachers.Total++
+		if t.Status == models.StatusActive {
+			snap.Teachers.Active++
+		} else {
+			snap.Teachers.Inactive++
+		}
+		if t.JoiningDate.Format("2006-01") == current {
+			snap.Teachers.NewThisMonth++
 		}
 	}
 }

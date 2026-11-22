@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -19,7 +18,6 @@ import (
 )
 
 const (
-	maxStudentPhotoBytes  = 1 << 20 // 1 MiB; the client resizes photos before upload
 	studentNameMax        = 120
 	studentRelationMax    = 40
 	studentAddressMax     = 500
@@ -29,7 +27,6 @@ const (
 var (
 	admissionNumberPattern = regexp.MustCompile(`^[A-Z0-9][A-Z0-9/_-]{1,31}$`)
 	errStudentNotFound     = apperror.NotFound("Student not found.")
-	allowedPhotoTypes      = map[string]bool{"image/jpeg": true, "image/png": true, "image/webp": true}
 )
 
 // StudentInput is the create/update request body. Update replaces every field.
@@ -397,15 +394,9 @@ func (s *StudentService) Delete(ctx context.Context, actor *models.User, id uuid
 // SetPhoto validates and stores a profile photo. The type is detected from
 // the bytes, never trusted from the client.
 func (s *StudentService) SetPhoto(ctx context.Context, actor *models.User, id uuid.UUID, data []byte) (*models.Student, error) {
-	if len(data) == 0 {
-		return nil, apperror.Validation(map[string]string{"photo": "Choose a photo to upload."})
-	}
-	if len(data) > maxStudentPhotoBytes {
-		return nil, apperror.Validation(map[string]string{"photo": "Photo must be 1 MB or smaller."})
-	}
-	contentType := http.DetectContentType(data)
-	if !allowedPhotoTypes[contentType] {
-		return nil, apperror.Validation(map[string]string{"photo": "Use a JPEG, PNG or WebP image."})
+	contentType, err := validatePhoto(data)
+	if err != nil {
+		return nil, err
 	}
 	updated, err := s.students.SetPhoto(ctx, id, contentType, data, actor.ID)
 	if err != nil {
@@ -417,7 +408,7 @@ func (s *StudentService) SetPhoto(ctx context.Context, actor *models.User, id uu
 }
 
 // Photo returns a student's stored photo.
-func (s *StudentService) Photo(ctx context.Context, id uuid.UUID) (*models.StudentPhoto, error) {
+func (s *StudentService) Photo(ctx context.Context, id uuid.UUID) (*models.Photo, error) {
 	p, err := s.students.GetPhoto(ctx, id)
 	if errors.Is(err, repository.ErrNotFound) {
 		return nil, apperror.NotFound("Photo not found.")

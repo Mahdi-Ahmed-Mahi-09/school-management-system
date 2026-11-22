@@ -17,14 +17,14 @@ import (
 type StudentRepo struct {
 	mu       sync.Mutex
 	students map[uuid.UUID]*models.Student
-	photos   map[uuid.UUID]models.StudentPhoto
+	photos   map[uuid.UUID]models.Photo
 }
 
 var _ repository.StudentRepository = (*StudentRepo)(nil)
 
 // NewStudentRepo creates an empty StudentRepo.
 func NewStudentRepo() *StudentRepo {
-	return &StudentRepo{students: map[uuid.UUID]*models.Student{}, photos: map[uuid.UUID]models.StudentPhoto{}}
+	return &StudentRepo{students: map[uuid.UUID]*models.Student{}, photos: map[uuid.UUID]models.Photo{}}
 }
 
 func cloneStudent(s *models.Student) *models.Student { cp := *s; return &cp }
@@ -162,12 +162,12 @@ func (r *StudentRepo) SetPhoto(_ context.Context, id uuid.UUID, contentType stri
 		return nil, repository.ErrNotFound
 	}
 	now := time.Now()
-	r.photos[id] = models.StudentPhoto{ContentType: contentType, Data: append([]byte{}, data...), UpdatedAt: now}
+	r.photos[id] = models.Photo{ContentType: contentType, Data: append([]byte{}, data...), UpdatedAt: now}
 	s.PhotoUpdatedAt, s.UpdatedBy, s.UpdatedAt = &now, &actorID, now
 	return cloneStudent(s), nil
 }
 
-func (r *StudentRepo) GetPhoto(_ context.Context, id uuid.UUID) (*models.StudentPhoto, error) {
+func (r *StudentRepo) GetPhoto(_ context.Context, id uuid.UUID) (*models.Photo, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	p, ok := r.photos[id]

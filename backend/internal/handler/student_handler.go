@@ -1,11 +1,6 @@
 package handler
 
 import (
-	"errors"
-	"io"
-	"net/http"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -16,10 +11,6 @@ import (
 	"github.com/Mahdi-Ahmed-Mahi-09/school-management-system/backend/internal/service"
 	"github.com/Mahdi-Ahmed-Mahi-09/school-management-system/backend/internal/validation"
 )
-
-// maxPhotoUploadBytes bounds how much of an upload is read (the service
-// enforces the real 1 MiB image limit).
-const maxPhotoUploadBytes = 1<<20 + 1
 
 // StudentHandler serves student management endpoints.
 type StudentHandler struct {
@@ -148,20 +139,9 @@ func (h *StudentHandler) UploadPhoto(c *gin.Context) {
 		response.Error(c, err)
 		return
 	}
-	file, _, err := c.Request.FormFile("photo")
+	data, err := readPhotoUpload(c)
 	if err != nil {
-		var maxErr *http.MaxBytesError
-		if errors.As(err, &maxErr) {
-			response.Error(c, apperror.Validation(map[string]string{"photo": "Photo must be 1 MB or smaller."}))
-			return
-		}
-		response.Error(c, apperror.Validation(map[string]string{"photo": "Choose a photo to upload."}))
-		return
-	}
-	defer file.Close()
-	data, err := io.ReadAll(io.LimitReader(file, maxPhotoUploadBytes))
-	if err != nil {
-		response.Error(c, apperror.BadRequest("Could not read the uploaded photo."))
+		response.Error(c, err)
 		return
 	}
 	st, err := h.students.SetPhoto(c.Request.Context(), middleware.CurrentUser(c), id, data)
@@ -184,15 +164,7 @@ func (h *StudentHandler) Photo(c *gin.Context) {
 		response.Error(c, err)
 		return
 	}
-	// Versioned URLs (?v=) never change content, so they may be cached privately.
-	if c.Query("v") != "" {
-		c.Header("Cache-Control", "private, max-age=31536000, immutable")
-	} else {
-		c.Header("Cache-Control", "private, no-cache")
-	}
-	c.Header("Content-Disposition", "inline")
-	c.Header("Content-Length", strconv.Itoa(len(photo.Data)))
-	c.Data(http.StatusOK, photo.ContentType, photo.Data)
+	servePhoto(c, photo)
 }
 
 // RemovePhoto handles DELETE /students/:id/photo.

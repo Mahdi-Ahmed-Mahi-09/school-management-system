@@ -40,6 +40,24 @@ export const studentsApi = {
   removePhoto: (id) => api.delete(`/students/${id}/photo`).then(unwrap),
 }
 
+export const teachersApi = {
+  /** Resolves to `{ teachers, meta }`. Listings never include salary. */
+  list: (params, { signal } = {}) =>
+    api.get('/teachers', { params, signal }).then((res) => ({ teachers: res.data.data, meta: res.data.meta })),
+  stats: () => api.get('/teachers/stats').then(unwrap),
+  linkableAccounts: (params) => api.get('/teachers/linkable-accounts', { params }).then(unwrap),
+  get: (id) => api.get(`/teachers/${id}`).then(unwrap),
+  create: (payload) => api.post('/teachers', payload).then(unwrap),
+  update: (id, payload) => api.put(`/teachers/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/teachers/${id}`).then(unwrap),
+  uploadPhoto: (id, blob) => {
+    const form = new FormData()
+    form.append('photo', blob, 'photo.jpg')
+    return api.put(`/teachers/${id}/photo`, form, { headers: { 'Content-Type': undefined } }).then(unwrap)
+  },
+  removePhoto: (id) => api.delete(`/teachers/${id}/photo`).then(unwrap),
+}
+
 export const usersApi = {
   /** Resolves to `{ users, meta }`. */
   list: (params, { signal } = {}) =>

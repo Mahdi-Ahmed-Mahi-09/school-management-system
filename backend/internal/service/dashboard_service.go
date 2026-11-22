@@ -22,6 +22,7 @@ var implementedModules = map[string]bool{
 	models.ModuleUsers.Key:      true,
 	models.ModuleAcademic.Key:   false,
 	models.ModuleStudents.Key:   true, // Feature 03
+	models.ModuleTeachers.Key:   true, // Feature 04
 	models.ModuleAttendance.Key: false,
 	models.ModuleFees.Key:       false,
 	models.ModuleExams.Key:      false,
@@ -32,6 +33,7 @@ var dashboardModules = []models.ModuleInfo{
 	models.ModuleUsers,
 	models.ModuleAcademic,
 	models.ModuleStudents,
+	models.ModuleTeachers,
 	models.ModuleAttendance,
 	models.ModuleFees,
 	models.ModuleExams,
@@ -91,8 +93,9 @@ func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDas
 		Timezone:    s.loc.String(),
 		Overview: models.DashboardOverview{
 			// Students are counted from student records (Feature 03), not login accounts.
-			Students:  models.Available(snap.Students),
-			Teachers:  roleSection(models.RoleTeacher),
+			Students: models.Available(snap.Students),
+			// Teachers are counted from teacher records (Feature 04), not login accounts.
+			Teachers:  models.Available(snap.Teachers),
 			Guardians: roleSection(models.RoleGuardian),
 			Classes:   models.Unavailable[models.CountMetric](models.ModuleAcademic),
 			Sections:  models.Unavailable[models.CountMetric](models.ModuleAcademic),

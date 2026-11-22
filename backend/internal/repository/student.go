@@ -46,6 +46,6 @@ type StudentRepository interface {
 	// Delete removes the student (and photo) and returns the deleted record.
 	Delete(ctx context.Context, id uuid.UUID) (*models.Student, error)
 	SetPhoto(ctx context.Context, id uuid.UUID, contentType string, data []byte, actorID uuid.UUID) (*models.Student, error)
-	GetPhoto(ctx context.Context, id uuid.UUID) (*models.StudentPhoto, error)
+	GetPhoto(ctx context.Context, id uuid.UUID) (*models.Photo, error)
 	DeletePhoto(ctx context.Context, id uuid.UUID, actorID uuid.UUID) (*models.Student, error)
 }

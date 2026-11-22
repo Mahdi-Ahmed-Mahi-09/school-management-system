@@ -6,6 +6,7 @@ import {
   KeyRound,
   Megaphone,
   PencilLine,
+  Presentation,
   ShieldCheck,
   Trash2,
   UserCheck,
@@ -16,7 +17,7 @@ import {
 import { ROLE_META } from '../../lib/roles'
 import { cn, formatDate, formatDateTime, formatRelative } from '../../lib/utils'
 import { formatDateOnly } from '../../lib/students'
-import { StudentAvatar } from '../students/StudentAvatar'
+import { PersonAvatar } from '../ui/PersonAvatar'
 import { Badge, StatusBadge } from '../ui/Display'
 import { ModuleUnavailable, NoData, Panel } from './Panel'
 
@@ -57,7 +58,7 @@ export function RecentAdmissions({ section, className }) {
           {section.data.map((a) => (
             <li key={a.id}>
               <Link to={`/students/${a.id}`} className="flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-slate-50">
-                <StudentAvatar student={a} size="sm" />
+                <PersonAvatar person={a} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-slate-900">{a.full_name}</p>
                   <p className="truncate text-xs text-slate-500">
@@ -121,6 +122,11 @@ const ACTIVITY_META = {
   'student.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
   'student.photo_updated': { icon: Camera, className: 'bg-violet-50 text-violet-600 ring-violet-100' },
   'student.photo_removed': { icon: Camera, className: 'bg-slate-100 text-slate-600 ring-slate-200' },
+  'teacher.created': { icon: Presentation, className: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
+  'teacher.updated': { icon: PencilLine, className: 'bg-sky-50 text-sky-600 ring-sky-100' },
+  'teacher.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
+  'teacher.photo_updated': { icon: Camera, className: 'bg-violet-50 text-violet-600 ring-violet-100' },
+  'teacher.photo_removed': { icon: Camera, className: 'bg-slate-100 text-slate-600 ring-slate-200' },
 }
 
 function activityMeta(item) {

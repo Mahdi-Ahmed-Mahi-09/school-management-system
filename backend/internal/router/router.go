@@ -28,6 +28,7 @@ type Deps struct {
 	UserService      *service.UserService
 	DashboardService *service.DashboardService
 	StudentService   *service.StudentService
+	TeacherService   *service.TeacherService
 	Cookie           handler.CookieConfig
 	AllowedOrigins   []string
 	LoginRateLimit   int
@@ -61,6 +62,7 @@ func New(d Deps) *gin.Engine {
 	userH := handler.NewUserHandler(d.UserService)
 	dashboardH := handler.NewDashboardHandler(d.DashboardService)
 	studentH := handler.NewStudentHandler(d.StudentService)
+	teacherH := handler.NewTeacherHandler(d.TeacherService)
 	loginLimiter := middleware.NewRateLimiter(d.LoginRateLimit, d.LoginRateWindow)
 
 	api := r.Group("/api/v1", middleware.CSRFGuard())
@@ -117,6 +119,20 @@ func New(d Deps) *gin.Engine {
 	students.PUT("/:id/photo", middleware.RequirePermission(models.PermStudentsUpdate), studentH.UploadPhoto)
 	students.DELETE("/:id/photo", middleware.RequirePermission(models.PermStudentsUpdate), studentH.RemovePhoto)
 	students.DELETE("/:id", middleware.RequirePermission(models.PermStudentsDelete), studentH.Delete)
+
+	// Teacher management: admin role AND the specific permission are both required.
+	// Salary visibility is decided per field by the teachers:view_salary permission.
+	teachers := protected.Group("/teachers", middleware.RequireRoles(models.RoleAdmin))
+	teachers.GET("", middleware.RequirePermission(models.PermTeachersRead), teacherH.List)
+	teachers.GET("/stats", middleware.RequirePermission(models.PermTeachersRead), teacherH.Stats)
+	teachers.GET("/linkable-accounts", middleware.RequirePermission(models.PermTeachersUpdate), teacherH.LinkableAccounts)
+	teachers.GET("/:id", middleware.RequirePermission(models.PermTeachersRead), teacherH.Get)
+	teachers.GET("/:id/photo", middleware.RequirePermission(models.PermTeachersRead), teacherH.Photo)
+	teachers.POST("", middleware.RequirePermission(models.PermTeachersCreate), teacherH.Create)
+	teachers.PUT("/:id", middleware.RequirePermission(models.PermTeachersUpdate), teacherH.Update)
+	teachers.PUT("/:id/photo", middleware.RequirePermission(models.PermTeachersUpdate), teacherH.UploadPhoto)
+	teachers.DELETE("/:id/photo", middleware.RequirePermission(models.PermTeachersUpdate), teacherH.RemovePhoto)
+	teachers.DELETE("/:id", middleware.RequirePermission(models.PermTeachersDelete), teacherH.Delete)
 
 	return r
 }

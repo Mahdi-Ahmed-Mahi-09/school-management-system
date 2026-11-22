@@ -4,62 +4,15 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CircleAlert, Hash, Mail, Phone, UserRoundX } from 'lucide-react'
 import { getErrorMessage, getFieldErrors } from '../../api/client'
 import { studentsApi } from '../../api/services'
-import { PhotoPicker } from '../../components/students/PhotoPicker'
+import { PhotoPicker } from '../../components/ui/PhotoPicker'
+import { FormSection, FormSkeleton, TextArea } from '../../components/ui/Sections'
 import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
 import { Button } from '../../components/ui/Button'
 import { buttonClasses } from '../../components/ui/buttonStyles'
-import { Alert, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '../../components/ui/Display'
-import { Field, Input, Select } from '../../components/ui/Field'
+import { Alert, Card, EmptyState, ErrorState, PageHeader } from '../../components/ui/Display'
+import { Input, Select } from '../../components/ui/Field'
 import { useToast } from '../../components/ui/Toast'
 import { BLOOD_GROUPS, GENDERS, STUDENT_FIELDS, emptyStudentForm, formToPayload, studentRules, studentToForm, todayISO } from '../../lib/students'
-import { cn } from '../../lib/utils'
-
-/** A titled block of the form: description on the left, fields on the right. */
-function FormSection({ title, description, children }) {
-  return (
-    <section className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-      <div>
-        <h2 className="text-[15px] font-semibold text-slate-900">{title}</h2>
-        <p className="mt-1 text-[13px] text-slate-500">{description}</p>
-      </div>
-      <Card className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">{children}</Card>
-    </section>
-  )
-}
-
-function TextArea({ label, error, required, className, ref, ...props }) {
-  return (
-    <Field id="student-address" label={label} error={error} required={required} className={className}>
-      <textarea
-        ref={ref}
-        id="student-address"
-        rows={3}
-        aria-invalid={!!error || undefined}
-        className={cn(
-          'block w-full resize-y rounded-lg bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm ring-1 ring-inset placeholder:text-slate-400 focus:ring-2 focus:outline-none',
-          error ? 'ring-rose-300 focus:ring-rose-500' : 'ring-slate-200 hover:ring-slate-300 focus:ring-brand-500',
-        )}
-        {...props}
-      />
-    </Field>
-  )
-}
-
-function FormSkeleton() {
-  return (
-    <div className="space-y-8">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8">
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3 w-48" />
-          </div>
-          <Skeleton className="h-56 rounded-xl" />
-        </div>
-      ))}
-    </div>
-  )
-}
 
 export default function StudentFormPage() {
   const { id } = useParams()
@@ -185,7 +138,7 @@ export default function StudentFormPage() {
 
           <FormSection title="Student details" description="Identity and admission information.">
             <div className="sm:col-span-2">
-              <PhotoPicker student={student} fullName={fullName} value={photo} onChange={setPhoto} disabled={isSubmitting} />
+              <PhotoPicker record={student} label="Student photo" fullName={fullName} value={photo} onChange={setPhoto} disabled={isSubmitting} />
             </div>
             <Input
               label="Student ID"

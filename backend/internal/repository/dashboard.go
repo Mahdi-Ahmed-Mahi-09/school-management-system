@@ -36,6 +36,9 @@ type DashboardSnapshot struct {
 	Students          models.RoleMetric
 	AdmissionsByMonth []models.MonthCount
 	RecentAdmissions  []models.Admission
+
+	// Teacher records (Feature 04).
+	Teachers models.RoleMetric
 }
 
 // DashboardRepository reads aggregated dashboard data.

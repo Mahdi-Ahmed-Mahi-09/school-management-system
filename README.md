@@ -70,6 +70,30 @@ Admin-only student records. These are separate from login accounts, because a st
 - **Activity and dashboard:** every change is written to the activity log. The dashboard's student KPI, enrollment and recent admissions now come from student records.
 - **Not included yet:** class and section placement, attendance and fees, and guardian portal links. Those future modules will reference `students.id`.
 
+### Feature 04 — Teacher Management
+
+Admin-only teacher records: profile, contact, qualifications, employment terms and an optional confidential salary.
+
+- **Pages:**
+  - Teacher list (`/teachers`) with real totals (total, active, full-time/part-time, joined this month), search (name, Teacher ID, subject, designation, phone, email), filters (status, employment type, designation, joining-date range), sorting and pagination.
+  - Profile page (`/teachers/:id`) with sections for personal, contact, qualification and specialization, employment, emergency contact, login account and notes.
+  - Create/edit pages.
+- **Fields:**
+  - Required: Teacher ID (unique, case-insensitive), name, gender, phone, designation, employment type (full-time or part-time), joining date, status.
+  - Optional: date of birth, email, address, qualification, specialization, salary, emergency contact (name and phone must be given together), notes, photo.
+- **Salary protection:**
+  - The salary field appears in a teacher's details only for holders of the `teachers:view_salary` permission.
+  - It never appears in lists, the dashboard or activity logs.
+  - On the profile it's masked until revealed.
+  - Saving without a salary field keeps the stored value, and only permitted users can change it.
+- **Login account link:** a record can be linked to one existing login account with the Teacher role, reusing Feature 01's accounts rather than a second authentication system. Each account can be linked to only one record. This is checked inside a transaction that locks the user row and backed by a partial unique index. Deleting a teacher record keeps the login account.
+- **Shared code:**
+  - Photo validation and serving.
+  - The avatar, photo picker, type-to-confirm delete dialog, form/detail sections and list URL state.
+  - The admin pages are lazy-loaded per route.
+- **Dashboard:** the Teachers KPI now counts teacher records.
+- **Not included yet:** subject and class assignment, routines, attendance and payroll. Those future modules will reference `teachers.id`.
+
 ## Getting started
 
 ### 1. Database
@@ -150,6 +174,14 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | GET    | `/students/:id/photo`   | Admin (`students:read`)   | The stored photo (cached privately when requested with `?v=`) |
 | PUT    | `/students/:id/photo`   | Admin (`students:update`) | Upload a photo (multipart form field `photo`) |
 | DELETE | `/students/:id/photo`   | Admin (`students:update`) | Remove the photo |
+| GET    | `/teachers`             | Admin (`teachers:read`)   | List teachers (never includes salary): `search`, `status`, `employment_type`, `designation`, `joined_from`, `joined_to`, `sort`, `order`, `page`, `page_size` |
+| GET    | `/teachers/stats`       | Admin (`teachers:read`)   | Counts and distinct designations |
+| GET    | `/teachers/linkable-accounts` | Admin (`teachers:update`) | Teacher-role accounts free to link (`search`, `teacher_id`) |
+| GET    | `/teachers/:id`         | Admin (`teachers:read`)   | Teacher details; salary only with `teachers:view_salary` |
+| POST   | `/teachers`             | Admin (`teachers:create`) | Create a teacher (optional `user_id` link and `salary`) |
+| PUT    | `/teachers/:id`         | Admin (`teachers:update`) | Replace details; an omitted `salary` keeps the stored value |
+| DELETE | `/teachers/:id`         | Admin (`teachers:delete`) | Delete the record and photo (the login account is kept) |
+| GET/PUT/DELETE | `/teachers/:id/photo` | Admin | View, upload (multipart `photo`) or remove the photo |
 
 ## Project structure
 

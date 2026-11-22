@@ -242,8 +242,8 @@ func (r *PostgresStudentRepository) SetPhoto(ctx context.Context, id uuid.UUID, 
 }
 
 // GetPhoto loads a student's photo.
-func (r *PostgresStudentRepository) GetPhoto(ctx context.Context, id uuid.UUID) (*models.StudentPhoto, error) {
-	var p models.StudentPhoto
+func (r *PostgresStudentRepository) GetPhoto(ctx context.Context, id uuid.UUID) (*models.Photo, error) {
+	var p models.Photo
 	err := r.db.QueryRow(ctx, `SELECT content_type, data, updated_at FROM student_photos WHERE student_id = $1`, id).
 		Scan(&p.ContentType, &p.Data, &p.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {

@@ -58,6 +58,11 @@ export const PERMISSIONS = {
   STUDENTS_CREATE: 'students:create',
   STUDENTS_UPDATE: 'students:update',
   STUDENTS_DELETE: 'students:delete',
+  TEACHERS_READ: 'teachers:read',
+  TEACHERS_CREATE: 'teachers:create',
+  TEACHERS_UPDATE: 'teachers:update',
+  TEACHERS_DELETE: 'teachers:delete',
+  TEACHERS_VIEW_SALARY: 'teachers:view_salary',
 }
 
 export const PERMISSION_LABELS = {
@@ -75,4 +80,9 @@ export const PERMISSION_LABELS = {
   'students:create': 'Add students',
   'students:update': 'Edit student records and photos',
   'students:delete': 'Delete student records',
+  'teachers:read': 'View teacher records',
+  'teachers:create': 'Add teachers',
+  'teachers:update': 'Edit teacher records, photos and account links',
+  'teachers:delete': 'Delete teacher records',
+  'teachers:view_salary': 'View and set teacher salaries',
 }

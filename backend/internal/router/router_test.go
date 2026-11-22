@@ -37,13 +37,16 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 	activity := memrepo.NewActivityRepo()
 	userSvc := service.NewUserService(users, activity, 4)
 	studentRepo := memrepo.NewStudentRepo()
-	dashboardSvc := service.NewDashboardService(&memrepo.DashboardRepo{Users: users, Activity: activity, Students: studentRepo}, time.UTC)
+	teacherRepo := memrepo.NewTeacherRepo(users)
+	dashboardSvc := service.NewDashboardService(&memrepo.DashboardRepo{Users: users, Activity: activity, Students: studentRepo, Teachers: teacherRepo}, time.UTC)
+	teacherSvc := service.NewTeacherService(teacherRepo, activity, time.UTC, "BDT")
 	studentSvc := service.NewStudentService(studentRepo, activity, time.UTC)
 	s := &testServer{t: t, users: users, tm: tm, engine: New(Deps{
 		AuthService:      authSvc,
 		UserService:      userSvc,
 		DashboardService: dashboardSvc,
 		StudentService:   studentSvc,
+		TeacherService:   teacherSvc,
 		Cookie:           handler.CookieConfig{Name: cookieName},
 		AllowedOrigins:   []string{"http://localhost:5173"},
 		LoginRateLimit:   loginLimit,

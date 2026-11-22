@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BookUser, ClipboardCheck, FilePenLine, GraduationCap, Megaphone, Presentation, Receipt, Users, Zap } from 'lucide-react'
+import { BookUser, BriefcaseBusiness, ClipboardCheck, FilePenLine, GraduationCap, Megaphone, Presentation, Receipt, Users, Zap } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { PERMISSIONS } from '../../lib/roles'
 import { cn } from '../../lib/utils'
@@ -11,8 +11,9 @@ import { Panel } from './Panel'
  */
 const ACTIONS = [
   { label: 'Add student', icon: GraduationCap, module: 'students', to: '/students/new', permission: PERMISSIONS.STUDENTS_CREATE },
-  { label: 'Add teacher account', icon: Presentation, module: 'users', to: '/users?create=teacher', permission: PERMISSIONS.USERS_CREATE },
+  { label: 'Add teacher', icon: Presentation, module: 'teachers', to: '/teachers/new', permission: PERMISSIONS.TEACHERS_CREATE },
   { label: 'Manage students', icon: BookUser, module: 'students', to: '/students', permission: PERMISSIONS.STUDENTS_READ },
+  { label: 'Manage teachers', icon: BriefcaseBusiness, module: 'teachers', to: '/teachers', permission: PERMISSIONS.TEACHERS_READ },
   { label: 'Manage users', icon: Users, module: 'users', to: '/users', permission: PERMISSIONS.USERS_READ },
   { label: 'Take attendance', icon: ClipboardCheck, module: 'attendance' },
   { label: 'Create examination', icon: FilePenLine, module: 'exams' },

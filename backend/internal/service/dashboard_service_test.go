@@ -71,7 +71,8 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 	if students.Status != models.SectionAvailable || students.Data.Total != 0 {
 		t.Errorf("students = %+v %+v", students, students.Data)
 	}
-	if d.Overview.Teachers.Data.Total != 1 {
+	// Teachers are counted from teacher records (none yet), not the teacher account.
+	if d.Overview.Teachers.Status != models.SectionAvailable || d.Overview.Teachers.Data.Total != 0 {
 		t.Errorf("teachers = %+v", d.Overview.Teachers.Data)
 	}
 	// Zero guardians is a real, confirmed zero — not "unavailable".
@@ -118,7 +119,7 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 		t.Errorf("class distribution should wait for the academic module: %+v", m)
 	}
 
-	wantAvailable := map[string]bool{models.ModuleUsers.Key: true, models.ModuleStudents.Key: true}
+	wantAvailable := map[string]bool{models.ModuleUsers.Key: true, models.ModuleStudents.Key: true, models.ModuleTeachers.Key: true}
 	for _, m := range d.Modules {
 		if m.Available != wantAvailable[m.Key] {
 			t.Errorf("module %s available = %v", m.Key, m.Available)

@@ -18,7 +18,7 @@ import {
 import { getErrorMessage } from '../../api/client'
 import { studentsApi } from '../../api/services'
 import { DeleteStudentDialog } from '../../components/students/DeleteStudentDialog'
-import { StudentAvatar } from '../../components/students/StudentAvatar'
+import { PersonAvatar } from '../../components/ui/PersonAvatar'
 import { Button } from '../../components/ui/Button'
 import { buttonClasses } from '../../components/ui/buttonStyles'
 import { Card, EmptyState, ErrorState, PageHeader, Skeleton, StatCard, StatusBadge } from '../../components/ui/Display'
@@ -270,7 +270,7 @@ export default function StudentsPage() {
                       <tr key={s.id} className="group transition-colors hover:bg-slate-50/70">
                         <td className="px-4 py-3 sm:pl-6">
                           <Link to={`/students/${s.id}`} className="flex items-center gap-3 rounded-lg focus-visible:ring-2 focus-visible:ring-brand-500/40">
-                            <StudentAvatar student={s} />
+                            <PersonAvatar person={s} />
                             <span className="min-w-0">
                               <span className="block truncate font-medium text-slate-900 group-hover:text-brand-700">{s.full_name}</span>
                               <span className="block truncate text-[13px] text-slate-500">
@@ -318,7 +318,7 @@ export default function StudentsPage() {
                 : students.map((s) => (
                     <li key={s.id} className="flex items-start gap-3 p-4">
                       <Link to={`/students/${s.id}`} className="flex min-w-0 flex-1 items-start gap-3">
-                        <StudentAvatar student={s} />
+                        <PersonAvatar person={s} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-medium text-slate-900">{s.full_name}</span>
                           <span className="block truncate text-[13px] text-slate-500">

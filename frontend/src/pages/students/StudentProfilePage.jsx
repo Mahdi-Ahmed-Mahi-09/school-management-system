@@ -8,7 +8,6 @@ import {
   Home,
   Mail,
   PencilLine,
-  Phone,
   ShieldAlert,
   Trash2,
   UserRound,
@@ -18,69 +17,16 @@ import {
 import { getErrorMessage } from '../../api/client'
 import { studentsApi } from '../../api/services'
 import { DeleteStudentDialog } from '../../components/students/DeleteStudentDialog'
-import { StudentAvatar } from '../../components/students/StudentAvatar'
+import { PersonAvatar } from '../../components/ui/PersonAvatar'
 import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
 import { Button } from '../../components/ui/Button'
 import { buttonClasses } from '../../components/ui/buttonStyles'
-import { Card, EmptyState, ErrorState, Skeleton, StatusBadge } from '../../components/ui/Display'
+import { Card, EmptyState, ErrorState, StatusBadge } from '../../components/ui/Display'
+import { DetailItem, DetailSection, PhoneLink, ProfileSkeleton } from '../../components/ui/Sections'
 import { useAuth } from '../../hooks/useAuth'
 import { PERMISSIONS } from '../../lib/roles'
 import { ageOn, formatDateOnly, genderLabel } from '../../lib/students'
 import { formatDateTime } from '../../lib/utils'
-
-function Section({ title, icon: Icon, children, className }) {
-  return (
-    <Card className={className}>
-      <div className="flex items-center gap-2.5 border-b border-slate-100 px-5 py-3.5 sm:px-6">
-        <Icon className="size-4 text-slate-400" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-      </div>
-      <dl className="grid gap-x-6 gap-y-5 p-5 sm:grid-cols-2 sm:p-6">{children}</dl>
-    </Card>
-  )
-}
-
-function Item({ label, value, wide, mono }) {
-  const empty = value == null || value === ''
-  return (
-    <div className={wide ? 'sm:col-span-2' : undefined}>
-      <dt className="text-[13px] text-slate-500">{label}</dt>
-      <dd className={`mt-1 text-sm break-words whitespace-pre-line ${empty ? 'text-slate-400' : 'font-medium text-slate-900'} ${mono ? 'font-mono' : ''}`}>
-        {empty ? 'Not provided' : value}
-      </dd>
-    </div>
-  )
-}
-
-function PhoneLink({ value }) {
-  if (!value) return null
-  return (
-    <a href={`tel:${value.replace(/[^\d+]/g, '')}`} className="inline-flex items-center gap-1.5 text-brand-700 hover:underline">
-      <Phone className="size-3.5" aria-hidden="true" />
-      {value}
-    </a>
-  )
-}
-
-function ProfileSkeleton() {
-  return (
-    <div className="space-y-6">
-      <Skeleton className="h-4 w-40" />
-      <Card className="flex items-center gap-5 p-6">
-        <Skeleton className="size-24 rounded-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-6 w-56" />
-          <Skeleton className="h-4 w-72" />
-        </div>
-      </Card>
-      <div className="grid gap-6 lg:grid-cols-2">
-        {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-48 rounded-xl" />
-        ))}
-      </div>
-    </div>
-  )
-}
 
 export default function StudentProfilePage() {
   const { id } = useParams()
@@ -137,7 +83,7 @@ export default function StudentProfilePage() {
 
       <Card className="p-5 sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <StudentAvatar student={s} size="xl" />
+          <PersonAvatar person={s} size="xl" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{s.full_name}</h1>
@@ -176,11 +122,11 @@ export default function StudentProfilePage() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Section title="Personal information" icon={UserRound}>
-          <Item label="Full name" value={s.full_name} />
-          <Item label="Gender" value={genderLabel(s.gender)} />
-          <Item label="Date of birth" value={`${formatDateOnly(s.date_of_birth)}${age != null ? ` (${age} years)` : ''}`} />
-          <Item
+        <DetailSection title="Personal information" icon={UserRound}>
+          <DetailItem label="Full name" value={s.full_name} />
+          <DetailItem label="Gender" value={genderLabel(s.gender)} />
+          <DetailItem label="Date of birth" value={`${formatDateOnly(s.date_of_birth)}${age != null ? ` (${age} years)` : ''}`} />
+          <DetailItem
             label="Blood group"
             value={
               s.blood_group && (
@@ -191,11 +137,11 @@ export default function StudentProfilePage() {
               )
             }
           />
-        </Section>
+        </DetailSection>
 
-        <Section title="Contact information" icon={Home}>
-          <Item label="Phone" value={<PhoneLink value={s.phone} />} />
-          <Item
+        <DetailSection title="Contact information" icon={Home}>
+          <DetailItem label="Phone" value={<PhoneLink value={s.phone} />} />
+          <DetailItem
             label="Email"
             value={
               s.email && (
@@ -206,34 +152,34 @@ export default function StudentProfilePage() {
               )
             }
           />
-          <Item label="Address" value={s.address} wide />
-        </Section>
+          <DetailItem label="Address" value={s.address} wide />
+        </DetailSection>
 
-        <Section title="Parents" icon={Users}>
-          <Item label="Father's name" value={s.father_name} />
-          <Item label="Father's phone" value={s.father_phone && <PhoneLink value={s.father_phone} />} />
-          <Item label="Mother's name" value={s.mother_name} />
-          <Item label="Mother's phone" value={s.mother_phone && <PhoneLink value={s.mother_phone} />} />
-        </Section>
+        <DetailSection title="Parents" icon={Users}>
+          <DetailItem label="Father's name" value={s.father_name} />
+          <DetailItem label="Father's phone" value={s.father_phone && <PhoneLink value={s.father_phone} />} />
+          <DetailItem label="Mother's name" value={s.mother_name} />
+          <DetailItem label="Mother's phone" value={s.mother_phone && <PhoneLink value={s.mother_phone} />} />
+        </DetailSection>
 
-        <Section title="Guardian" icon={HeartHandshake}>
-          <Item label="Name" value={s.guardian_name} />
-          <Item label="Relationship" value={s.guardian_relation} />
-          <Item label="Phone" value={<PhoneLink value={s.guardian_phone} />} wide />
-        </Section>
+        <DetailSection title="Guardian" icon={HeartHandshake}>
+          <DetailItem label="Name" value={s.guardian_name} />
+          <DetailItem label="Relationship" value={s.guardian_relation} />
+          <DetailItem label="Phone" value={<PhoneLink value={s.guardian_phone} />} wide />
+        </DetailSection>
 
-        <Section title="Emergency contact" icon={ShieldAlert}>
-          <Item label="Name" value={s.emergency_contact_name} />
-          <Item label="Relationship" value={s.emergency_contact_relation} />
-          <Item label="Phone" value={<PhoneLink value={s.emergency_contact_phone} />} wide />
-        </Section>
+        <DetailSection title="Emergency contact" icon={ShieldAlert}>
+          <DetailItem label="Name" value={s.emergency_contact_name} />
+          <DetailItem label="Relationship" value={s.emergency_contact_relation} />
+          <DetailItem label="Phone" value={<PhoneLink value={s.emergency_contact_phone} />} wide />
+        </DetailSection>
 
-        <Section title="Admission & record" icon={CalendarDays}>
-          <Item label="Student ID" value={s.admission_number} mono />
-          <Item label="Admission date" value={formatDateOnly(s.admission_date)} />
-          <Item label="Record created" value={formatDateTime(s.created_at)} />
-          <Item label="Last updated" value={formatDateTime(s.updated_at)} />
-        </Section>
+        <DetailSection title="Admission & record" icon={CalendarDays}>
+          <DetailItem label="Student ID" value={s.admission_number} mono />
+          <DetailItem label="Admission date" value={formatDateOnly(s.admission_date)} />
+          <DetailItem label="Record created" value={formatDateTime(s.created_at)} />
+          <DetailItem label="Last updated" value={formatDateTime(s.updated_at)} />
+        </DetailSection>
       </div>
 
       <DeleteStudentDialog

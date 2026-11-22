@@ -123,6 +123,9 @@ func (r *PostgresDashboardRepository) AdminSnapshot(ctx context.Context, q Dashb
 		if err := studentSnapshot(ctx, tx, q, snap); err != nil {
 			return err
 		}
+		if err := teacherSnapshot(ctx, tx, q, snap); err != nil {
+			return err
+		}
 
 		// 3. Recent activity with the actor's current name (one join, no N+1).
 		rows, err = tx.Query(ctx, `
@@ -242,4 +245,16 @@ func studentSnapshot(ctx context.Context, tx pgx.Tx, q DashboardQuery, snap *Das
 		})
 	}
 	return rows.Err()
+}
+
+// teacherSnapshot counts teacher records; "new this month" uses joining_date.
+func teacherSnapshot(ctx context.Context, tx pgx.Tx, q DashboardQuery, snap *DashboardSnapshot) error {
+	current := dateArg(q.MonthStarts[len(q.MonthStarts)-1])
+	return tx.QueryRow(ctx, `
+		SELECT count(*),
+		       count(*) FILTER (WHERE status = 'active'),
+		       count(*) FILTER (WHERE status = 'inactive'),
+		       count(*) FILTER (WHERE joining_date >= $1 AND joining_date < $2)
+		FROM teachers`, current, current.AddDate(0, 1, 0)).
+		Scan(&snap.Teachers.Total, &snap.Teachers.Active, &snap.Teachers.Inactive, &snap.Teachers.NewThisMonth)
 }
