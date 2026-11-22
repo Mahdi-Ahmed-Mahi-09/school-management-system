@@ -54,8 +54,9 @@ func (r *ActivityRepo) Entries() []models.ActivityEntry {
 type DashboardRepo struct {
 	Users    *UserRepo
 	Activity *ActivityRepo
-	Students *StudentRepo // optional
-	Teachers *TeacherRepo // optional
+	Students *StudentRepo      // optional
+	Teachers *TeacherRepo      // optional
+	Years    *AcademicYearRepo // optional
 }
 
 var _ repository.DashboardRepository = (*DashboardRepo)(nil)
@@ -141,6 +142,9 @@ func (r *DashboardRepo) AdminSnapshot(_ context.Context, q repository.DashboardQ
 	}
 	r.studentSnapshot(q, snap)
 	r.teacherSnapshot(q, snap)
+	if r.Years != nil {
+		snap.CurrentAcademicYear = r.Years.Current()
+	}
 	return snap, nil
 }
 

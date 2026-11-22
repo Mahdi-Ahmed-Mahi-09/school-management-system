@@ -58,6 +58,21 @@ export const teachersApi = {
   removePhoto: (id) => api.delete(`/teachers/${id}/photo`).then(unwrap),
 }
 
+export const academicYearsApi = {
+  /** Resolves to `{ years, meta }`. */
+  list: (params, { signal } = {}) =>
+    api.get('/academic-years', { params, signal }).then((res) => ({ years: res.data.data, meta: res.data.meta })),
+  /** Resolves to `{ total, upcoming, active, completed, current }`. */
+  stats: () => api.get('/academic-years/stats').then(unwrap),
+  get: (id) => api.get(`/academic-years/${id}`).then(unwrap),
+  create: (payload) => api.post('/academic-years', payload).then(unwrap),
+  update: (id, payload) => api.put(`/academic-years/${id}`, payload).then(unwrap),
+  /** Resolves to the activated year with `previous` (the demoted year, or null). */
+  activate: (id) => api.patch(`/academic-years/${id}/activate`).then(unwrap),
+  complete: (id) => api.patch(`/academic-years/${id}/complete`).then(unwrap),
+  remove: (id) => api.delete(`/academic-years/${id}`).then(unwrap),
+}
+
 export const usersApi = {
   /** Resolves to `{ users, meta }`. */
   list: (params, { signal } = {}) =>

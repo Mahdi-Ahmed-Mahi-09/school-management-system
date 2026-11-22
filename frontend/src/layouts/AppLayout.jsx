@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronsUpDown, GraduationCap, KeyRound, Presentation, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
+import { CalendarRange, ChevronsUpDown, GraduationCap, KeyRound, Presentation, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
 import { Wordmark } from '../components/brand/Logo'
 import { Alert, Avatar } from '../components/ui/Display'
 import { Menu } from '../components/ui/Menu'
@@ -21,6 +21,7 @@ const NAV_SECTIONS = [
   {
     label: 'School',
     items: [
+      { to: '/academic-years', label: 'Academic years', icon: CalendarRange, permission: PERMISSIONS.ACADEMIC_YEARS_READ },
       { to: '/students', label: 'Students', icon: GraduationCap, permission: PERMISSIONS.STUDENTS_READ },
       { to: '/teachers', label: 'Teachers', icon: Presentation, permission: PERMISSIONS.TEACHERS_READ },
     ],

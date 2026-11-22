@@ -63,6 +63,11 @@ export const PERMISSIONS = {
   TEACHERS_UPDATE: 'teachers:update',
   TEACHERS_DELETE: 'teachers:delete',
   TEACHERS_VIEW_SALARY: 'teachers:view_salary',
+  ACADEMIC_YEARS_READ: 'academic_years:read',
+  ACADEMIC_YEARS_CREATE: 'academic_years:create',
+  ACADEMIC_YEARS_UPDATE: 'academic_years:update',
+  ACADEMIC_YEARS_DELETE: 'academic_years:delete',
+  ACADEMIC_YEARS_MANAGE_STATUS: 'academic_years:manage_status',
 }
 
 export const PERMISSION_LABELS = {
@@ -85,4 +90,9 @@ export const PERMISSION_LABELS = {
   'teachers:update': 'Edit teacher records, photos and account links',
   'teachers:delete': 'Delete teacher records',
   'teachers:view_salary': 'View and set teacher salaries',
+  'academic_years:read': 'View academic years',
+  'academic_years:create': 'Add academic years',
+  'academic_years:update': 'Edit academic years',
+  'academic_years:delete': 'Delete unused academic years',
+  'academic_years:manage_status': 'Set the current academic year and complete years',
 }

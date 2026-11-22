@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom'
 import {
   Activity,
+  CalendarCheck2,
+  CalendarPlus,
   Camera,
+  CircleCheckBig,
   GraduationCap,
   KeyRound,
   Megaphone,
@@ -127,6 +130,11 @@ const ACTIVITY_META = {
   'teacher.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
   'teacher.photo_updated': { icon: Camera, className: 'bg-violet-50 text-violet-600 ring-violet-100' },
   'teacher.photo_removed': { icon: Camera, className: 'bg-slate-100 text-slate-600 ring-slate-200' },
+  'academic_year.created': { icon: CalendarPlus, className: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
+  'academic_year.updated': { icon: PencilLine, className: 'bg-sky-50 text-sky-600 ring-sky-100' },
+  'academic_year.activated': { icon: CalendarCheck2, className: 'bg-brand-50 text-brand-600 ring-brand-100' },
+  'academic_year.completed': { icon: CircleCheckBig, className: 'bg-slate-100 text-slate-600 ring-slate-200' },
+  'academic_year.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
 }
 
 function activityMeta(item) {

@@ -100,7 +100,6 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 	}{
 		"classes":            {d.Overview.Classes.Status, d.Overview.Classes.Module, d.Overview.Classes.Data != nil},
 		"sections":           {d.Overview.Sections.Status, d.Overview.Sections.Module, d.Overview.Sections.Data != nil},
-		"academic_year":      {d.Academic.AcademicYear.Status, d.Academic.AcademicYear.Module, d.Academic.AcademicYear.Data != nil},
 		"class_distribution": {d.Academic.ClassDistribution.Status, d.Academic.ClassDistribution.Module, d.Academic.ClassDistribution.Data != nil},
 		"attendance":         {d.Attendance.Status, d.Attendance.Module, d.Attendance.Data != nil},
 		"fees":               {d.Fees.Status, d.Fees.Module, d.Fees.Data != nil},
@@ -112,6 +111,12 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 		}
 	}
 
+	// Academic years exist as a module (Feature 05): with none current the
+	// section is available but empty, i.e. "not set up" rather than "not built".
+	if ay := d.Academic.AcademicYear; ay.Status != models.SectionAvailable || ay.Data != nil || ay.Module != nil {
+		t.Errorf("academic_year with no current year = %+v", ay)
+	}
+
 	if d.Academic.Enrollment.Status != models.SectionAvailable || d.RecentAdmissions.Status != models.SectionAvailable {
 		t.Error("enrollment and recent admissions should be available now that students exist")
 	}
@@ -119,7 +124,9 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 		t.Errorf("class distribution should wait for the academic module: %+v", m)
 	}
 
-	wantAvailable := map[string]bool{models.ModuleUsers.Key: true, models.ModuleStudents.Key: true, models.ModuleTeachers.Key: true}
+	wantAvailable := map[string]bool{
+		models.ModuleUsers.Key: true, models.ModuleAcademicYears.Key: true, models.ModuleStudents.Key: true, models.ModuleTeachers.Key: true,
+	}
 	for _, m := range d.Modules {
 		if m.Available != wantAvailable[m.Key] {
 			t.Errorf("module %s available = %v", m.Key, m.Available)

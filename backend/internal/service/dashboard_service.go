@@ -19,18 +19,20 @@ const (
 // Each future feature flips its module to true and supplies the matching
 // dashboard section, keeping the response contract unchanged.
 var implementedModules = map[string]bool{
-	models.ModuleUsers.Key:      true,
-	models.ModuleAcademic.Key:   false,
-	models.ModuleStudents.Key:   true, // Feature 03
-	models.ModuleTeachers.Key:   true, // Feature 04
-	models.ModuleAttendance.Key: false,
-	models.ModuleFees.Key:       false,
-	models.ModuleExams.Key:      false,
-	models.ModuleNotices.Key:    false,
+	models.ModuleUsers.Key:         true,
+	models.ModuleAcademicYears.Key: true, // Feature 05
+	models.ModuleAcademic.Key:      false,
+	models.ModuleStudents.Key:      true, // Feature 03
+	models.ModuleTeachers.Key:      true, // Feature 04
+	models.ModuleAttendance.Key:    false,
+	models.ModuleFees.Key:          false,
+	models.ModuleExams.Key:         false,
+	models.ModuleNotices.Key:       false,
 }
 
 var dashboardModules = []models.ModuleInfo{
 	models.ModuleUsers,
+	models.ModuleAcademicYears,
 	models.ModuleAcademic,
 	models.ModuleStudents,
 	models.ModuleTeachers,
@@ -73,12 +75,13 @@ func monthStarts(now time.Time, loc *time.Location, n int) []time.Time {
 func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDashboard, error) {
 	now := s.now()
 	y, m, day := now.In(s.loc).Date()
+	today := time.Date(y, m, day, 0, 0, 0, 0, time.UTC)
 	snap, err := s.repo.AdminSnapshot(ctx, repository.DashboardQuery{
 		MonthStarts:    monthStarts(now, s.loc, dashboardGrowthMonths),
 		Timezone:       s.loc.String(),
 		ActivityLimit:  dashboardActivityLimit,
 		AdmissionLimit: dashboardAdmissionLimit,
-		Today:          time.Date(y, m, day, 0, 0, 0, 0, time.UTC),
+		Today:          today,
 	})
 	if err != nil {
 		return nil, apperror.Internal(err)
@@ -103,7 +106,8 @@ func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDas
 		Accounts:      models.Available(snap.Accounts),
 		AccountGrowth: models.Available(snap.AccountGrowth),
 		Academic: models.AcademicOverview{
-			AcademicYear: models.Unavailable[models.AcademicYear](models.ModuleAcademic),
+			// Available with no data means no academic year is current yet.
+			AcademicYear: academicYearSection(snap.CurrentAcademicYear, today),
 			Enrollment: models.Available(models.EnrollmentSummary{
 				TotalEnrolled: snap.Students.Active,
 				NewThisMonth:  snap.Students.NewThisMonth,
@@ -122,4 +126,14 @@ func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDas
 		d.Modules = append(d.Modules, models.ModuleStatus{ModuleInfo: m, Available: implementedModules[m.Key]})
 	}
 	return d, nil
+}
+
+// academicYearSection reports the current academic year. When none is
+// current the section is still available (the module exists) but has no data,
+// which clients show as a setup prompt rather than "not implemented".
+func academicYearSection(current *models.AcademicYear, today time.Time) models.Section[models.AcademicYearSummary] {
+	if current == nil {
+		return models.Section[models.AcademicYearSummary]{Status: models.SectionAvailable}
+	}
+	return models.Available(current.Summary(today))
 }

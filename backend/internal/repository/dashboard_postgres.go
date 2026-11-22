@@ -126,6 +126,13 @@ func (r *PostgresDashboardRepository) AdminSnapshot(ctx context.Context, q Dashb
 		if err := teacherSnapshot(ctx, tx, q, snap); err != nil {
 			return err
 		}
+		current, err := scanAcademicYear(tx.QueryRow(ctx, academicYearSelect+` WHERE y.is_current`))
+		switch {
+		case err == nil:
+			snap.CurrentAcademicYear = current
+		case !errors.Is(err, ErrNotFound):
+			return err
+		}
 
 		// 3. Recent activity with the actor's current name (one join, no N+1).
 		rows, err = tx.Query(ctx, `

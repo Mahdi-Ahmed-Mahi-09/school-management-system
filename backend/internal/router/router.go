@@ -24,15 +24,16 @@ const maxBodyBytes = 2 << 20
 
 // Deps are the collaborators the router needs.
 type Deps struct {
-	AuthService      *service.AuthService
-	UserService      *service.UserService
-	DashboardService *service.DashboardService
-	StudentService   *service.StudentService
-	TeacherService   *service.TeacherService
-	Cookie           handler.CookieConfig
-	AllowedOrigins   []string
-	LoginRateLimit   int
-	LoginRateWindow  time.Duration
+	AuthService         *service.AuthService
+	UserService         *service.UserService
+	DashboardService    *service.DashboardService
+	StudentService      *service.StudentService
+	TeacherService      *service.TeacherService
+	AcademicYearService *service.AcademicYearService
+	Cookie              handler.CookieConfig
+	AllowedOrigins      []string
+	LoginRateLimit      int
+	LoginRateWindow     time.Duration
 	// HealthCheck verifies dependencies such as the database. Optional.
 	HealthCheck func(ctx context.Context) error
 }
@@ -63,6 +64,7 @@ func New(d Deps) *gin.Engine {
 	dashboardH := handler.NewDashboardHandler(d.DashboardService)
 	studentH := handler.NewStudentHandler(d.StudentService)
 	teacherH := handler.NewTeacherHandler(d.TeacherService)
+	yearH := handler.NewAcademicYearHandler(d.AcademicYearService)
 	loginLimiter := middleware.NewRateLimiter(d.LoginRateLimit, d.LoginRateWindow)
 
 	api := r.Group("/api/v1", middleware.CSRFGuard())
@@ -133,6 +135,17 @@ func New(d Deps) *gin.Engine {
 	teachers.PUT("/:id/photo", middleware.RequirePermission(models.PermTeachersUpdate), teacherH.UploadPhoto)
 	teachers.DELETE("/:id/photo", middleware.RequirePermission(models.PermTeachersUpdate), teacherH.RemovePhoto)
 	teachers.DELETE("/:id", middleware.RequirePermission(models.PermTeachersDelete), teacherH.Delete)
+
+	// Academic years: admin role AND the specific permission are both required.
+	years := protected.Group("/academic-years", middleware.RequireRoles(models.RoleAdmin))
+	years.GET("", middleware.RequirePermission(models.PermAcademicYearsRead), yearH.List)
+	years.GET("/stats", middleware.RequirePermission(models.PermAcademicYearsRead), yearH.Stats)
+	years.GET("/:id", middleware.RequirePermission(models.PermAcademicYearsRead), yearH.Get)
+	years.POST("", middleware.RequirePermission(models.PermAcademicYearsCreate), yearH.Create)
+	years.PUT("/:id", middleware.RequirePermission(models.PermAcademicYearsUpdate), yearH.Update)
+	years.PATCH("/:id/activate", middleware.RequirePermission(models.PermAcademicYearsManageStatus), yearH.Activate)
+	years.PATCH("/:id/complete", middleware.RequirePermission(models.PermAcademicYearsManageStatus), yearH.Complete)
+	years.DELETE("/:id", middleware.RequirePermission(models.PermAcademicYearsDelete), yearH.Delete)
 
 	return r
 }

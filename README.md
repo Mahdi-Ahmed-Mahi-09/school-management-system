@@ -94,6 +94,25 @@ Admin-only teacher records: profile, contact, qualifications, employment terms a
 - **Dashboard:** the Teachers KPI now counts teacher records.
 - **Not included yet:** subject and class assignment, routines, attendance and payroll. Those future modules will reference `teachers.id`.
 
+### Feature 05 — Academic Year Management
+
+Admin-only academic years: plan sessions, choose the current year and keep completed years for records.
+
+- **Pages:**
+  - Academic year list (`/academic-years`) with real totals (total, current year with progress, upcoming, completed), search (name, description), status filter, sorting and pagination. Create and edit use a form dialog that suggests a name such as `2026–2027` from the dates.
+  - Details page (`/academic-years/:id`) with overview, timeline progress, record history (created/updated by whom, when it was made current or completed) and a management-actions panel that shows why an action isn't available.
+- **Data:** name (unique, case-insensitive), start and end date (both inclusive), status (`upcoming`, `active`, `completed`), optional description. `is_current` is a generated column (`status = 'active'`), so the flag and the status can never disagree.
+- **Rules (enforced by the API and the database):**
+  - Start date must be before the end date; a year can be at most 2 years long.
+  - Date ranges may not overlap (PostgreSQL exclusion constraint); the API names the conflicting year.
+  - Only one year can be current (partial unique index). Activation runs in one transaction behind an advisory lock: the previous current year becomes `completed` if it lies before the new year, or goes back to `upcoming` if it lies after it.
+  - Years are never activated automatically. A new year starts as `upcoming`, or `completed` if its dates have already passed. A year whose end date has passed can't be made current.
+  - The current year can be completed at any time; an upcoming year only after its dates have passed. Edits can't move an upcoming or current year's end into the past.
+  - The current year can't be deleted. Future modules reference `academic_years.id` with `ON DELETE RESTRICT`; deleting a referenced year returns `409 ACADEMIC_YEAR_IN_USE`.
+  - "Today" is evaluated in the school's timezone (`APP_TIMEZONE`).
+- **Dashboard:** the academic year card shows the current year and its progress from the database, or a setup prompt when no year is current. A "Manage academic years" quick action and activity entries for academic year changes were added.
+- **Not included yet:** classes, sections, subjects, enrollment and promotion.
+
 ## Getting started
 
 ### 1. Database
@@ -182,6 +201,14 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | PUT    | `/teachers/:id`         | Admin (`teachers:update`) | Replace details; an omitted `salary` keeps the stored value |
 | DELETE | `/teachers/:id`         | Admin (`teachers:delete`) | Delete the record and photo (the login account is kept) |
 | GET/PUT/DELETE | `/teachers/:id/photo` | Admin | View, upload (multipart `photo`) or remove the photo |
+| GET    | `/academic-years`       | Admin (`academic_years:read`) | List academic years: `search`, `status`, `sort` (`start_date`, `name`, `created_at`), `order`, `page`, `page_size` |
+| GET    | `/academic-years/stats` | Admin (`academic_years:read`) | Counts per status and the current year |
+| GET    | `/academic-years/:id`   | Admin (`academic_years:read`) | Academic year details, including which actions are currently allowed |
+| POST   | `/academic-years`       | Admin (`academic_years:create`) | Create a year (`name`, `start_date`, `end_date`, `description`) |
+| PUT    | `/academic-years/:id`   | Admin (`academic_years:update`) | Replace name, dates and description (status is not editable here) |
+| PATCH  | `/academic-years/:id/activate` | Admin (`academic_years:manage_status`) | Make the year current; returns the demoted `previous` year |
+| PATCH  | `/academic-years/:id/complete` | Admin (`academic_years:manage_status`) | Mark the year completed |
+| DELETE | `/academic-years/:id`   | Admin (`academic_years:delete`) | Delete a year that is not current and not referenced |
 
 ## Project structure
 

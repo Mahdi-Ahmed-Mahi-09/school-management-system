@@ -89,7 +89,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <AcademicOverview academic={data.academic} now={new Date(data.generated_at)} className="lg:col-span-2" />
+            <AcademicOverview academic={data.academic} className="lg:col-span-2" />
             <QuickActions modules={data.modules} />
           </div>
 

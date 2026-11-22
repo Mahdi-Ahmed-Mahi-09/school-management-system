@@ -66,18 +66,20 @@ func run() error {
 	dashboardSvc := service.NewDashboardService(repository.NewPostgresDashboardRepository(pool), cfg.Timezone)
 	studentSvc := service.NewStudentService(repository.NewPostgresStudentRepository(pool), activityRepo, cfg.Timezone)
 	teacherSvc := service.NewTeacherService(repository.NewPostgresTeacherRepository(pool), activityRepo, cfg.Timezone, cfg.SalaryCurrency)
+	academicYearSvc := service.NewAcademicYearService(repository.NewPostgresAcademicYearRepository(pool), activityRepo, cfg.Timezone)
 
 	engine := router.New(router.Deps{
-		AuthService:      authSvc,
-		UserService:      userSvc,
-		DashboardService: dashboardSvc,
-		StudentService:   studentSvc,
-		TeacherService:   teacherSvc,
-		Cookie:           handler.CookieConfig{Name: cfg.CookieName, Secure: cfg.CookieSecure, Domain: cfg.CookieDomain},
-		AllowedOrigins:   cfg.CORSAllowedOrigins,
-		LoginRateLimit:   cfg.LoginRateLimit,
-		LoginRateWindow:  cfg.LoginRateWindow,
-		HealthCheck:      pool.Ping,
+		AuthService:         authSvc,
+		UserService:         userSvc,
+		DashboardService:    dashboardSvc,
+		StudentService:      studentSvc,
+		TeacherService:      teacherSvc,
+		AcademicYearService: academicYearSvc,
+		Cookie:              handler.CookieConfig{Name: cfg.CookieName, Secure: cfg.CookieSecure, Domain: cfg.CookieDomain},
+		AllowedOrigins:      cfg.CORSAllowedOrigins,
+		LoginRateLimit:      cfg.LoginRateLimit,
+		LoginRateWindow:     cfg.LoginRateWindow,
+		HealthCheck:         pool.Ping,
 	})
 
 	go purgeRevokedTokens(ctx, authSvc)

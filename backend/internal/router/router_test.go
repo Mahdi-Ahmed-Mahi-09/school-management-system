@@ -25,6 +25,7 @@ type testServer struct {
 	t      *testing.T
 	engine *gin.Engine
 	users  *memrepo.UserRepo
+	years  *memrepo.AcademicYearRepo
 	tm     *auth.TokenManager
 }
 
@@ -38,19 +39,21 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 	userSvc := service.NewUserService(users, activity, 4)
 	studentRepo := memrepo.NewStudentRepo()
 	teacherRepo := memrepo.NewTeacherRepo(users)
-	dashboardSvc := service.NewDashboardService(&memrepo.DashboardRepo{Users: users, Activity: activity, Students: studentRepo, Teachers: teacherRepo}, time.UTC)
+	yearRepo := memrepo.NewAcademicYearRepo()
+	dashboardSvc := service.NewDashboardService(&memrepo.DashboardRepo{Users: users, Activity: activity, Students: studentRepo, Teachers: teacherRepo, Years: yearRepo}, time.UTC)
 	teacherSvc := service.NewTeacherService(teacherRepo, activity, time.UTC, "BDT")
 	studentSvc := service.NewStudentService(studentRepo, activity, time.UTC)
-	s := &testServer{t: t, users: users, tm: tm, engine: New(Deps{
-		AuthService:      authSvc,
-		UserService:      userSvc,
-		DashboardService: dashboardSvc,
-		StudentService:   studentSvc,
-		TeacherService:   teacherSvc,
-		Cookie:           handler.CookieConfig{Name: cookieName},
-		AllowedOrigins:   []string{"http://localhost:5173"},
-		LoginRateLimit:   loginLimit,
-		LoginRateWindow:  time.Minute,
+	s := &testServer{t: t, users: users, years: yearRepo, tm: tm, engine: New(Deps{
+		AuthService:         authSvc,
+		UserService:         userSvc,
+		DashboardService:    dashboardSvc,
+		StudentService:      studentSvc,
+		TeacherService:      teacherSvc,
+		AcademicYearService: service.NewAcademicYearService(yearRepo, activity, time.UTC),
+		Cookie:              handler.CookieConfig{Name: cookieName},
+		AllowedOrigins:      []string{"http://localhost:5173"},
+		LoginRateLimit:      loginLimit,
+		LoginRateWindow:     time.Minute,
 	})}
 	for _, u := range []struct {
 		name string

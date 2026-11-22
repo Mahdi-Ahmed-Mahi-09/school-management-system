@@ -30,8 +30,10 @@ type ModuleInfo struct {
 var (
 	ModuleUsers = ModuleInfo{Key: "users", Name: "User Management",
 		Description: "Accounts for admins, teachers, students and guardians."}
+	ModuleAcademicYears = ModuleInfo{Key: "academic_years", Name: "Academic Year Management",
+		Description: "Academic years and the current school year."}
 	ModuleAcademic = ModuleInfo{Key: "academic", Name: "Academic Structure",
-		Description: "Academic years, classes and sections."}
+		Description: "Classes, sections and student placement."}
 	ModuleStudents = ModuleInfo{Key: "students", Name: "Student Management",
 		Description: "Student admissions, enrollment and class placement."}
 	ModuleTeachers = ModuleInfo{Key: "teachers", Name: "Teacher Management",
@@ -101,13 +103,18 @@ type AccountGrowthPoint struct {
 	Guardians int    `json:"guardians"`
 }
 
-// AcademicYear is the active academic year (owned by the academic module).
-type AcademicYear struct {
-	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	StartDate string    `json:"start_date"` // YYYY-MM-DD
-	EndDate   string    `json:"end_date"`   // YYYY-MM-DD
-	Status    string    `json:"status"`     // upcoming | active | completed
+// AcademicYearSummary is the current academic year shown on the dashboard
+// (owned by the academic years module). Progress is measured in the school's
+// timezone: DaysElapsed is clamped to [0, DaysTotal].
+type AcademicYearSummary struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	StartDate   string    `json:"start_date"` // YYYY-MM-DD
+	EndDate     string    `json:"end_date"`   // YYYY-MM-DD
+	Status      string    `json:"status"`     // upcoming | active | completed
+	Timeline    string    `json:"timeline"`   // not_started | in_progress | ended
+	DaysTotal   int       `json:"days_total"`
+	DaysElapsed int       `json:"days_elapsed"`
 }
 
 // MonthCount is a count for one month.
@@ -208,7 +215,7 @@ type DashboardOverview struct {
 
 // AcademicOverview holds academic-structure sections.
 type AcademicOverview struct {
-	AcademicYear      Section[AcademicYear]            `json:"academic_year"`
+	AcademicYear      Section[AcademicYearSummary]     `json:"academic_year"`
 	Enrollment        Section[EnrollmentSummary]       `json:"enrollment"`
 	ClassDistribution Section[[]ClassDistributionItem] `json:"class_distribution"`
 }

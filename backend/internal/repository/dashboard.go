@@ -39,6 +39,9 @@ type DashboardSnapshot struct {
 
 	// Teacher records (Feature 04).
 	Teachers models.RoleMetric
+
+	// The current academic year, or nil if none is active (Feature 05).
+	CurrentAcademicYear *models.AcademicYear
 }
 
 // DashboardRepository reads aggregated dashboard data.

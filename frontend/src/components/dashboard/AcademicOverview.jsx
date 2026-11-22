@@ -1,17 +1,17 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { BookOpenCheck, CalendarRange, ChartNoAxesColumn, School, UserRoundPlus } from 'lucide-react'
-import { cn, formatDate, formatNumber } from '../../lib/utils'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../../hooks/useAuth'
+import { YEAR_STATUS_META } from '../../lib/academicYears'
+import { PERMISSIONS } from '../../lib/roles'
+import { formatDateOnly } from '../../lib/students'
+import { cn, formatNumber } from '../../lib/utils'
 import { ChartTooltip } from './ChartParts'
 import { ModuleUnavailable, NoData, Panel } from './Panel'
 import { BRAND, axisProps, gridProps } from './chartTheme'
 
-const YEAR_STATUS = {
-  active: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
-  upcoming: 'bg-sky-50 text-sky-700 ring-sky-600/15',
-  completed: 'bg-slate-100 text-slate-600 ring-slate-500/15',
-}
-
-function AcademicYearCard({ section, now }) {
+function AcademicYearCard({ section }) {
+  const { can } = useAuth()
   if (section?.status !== 'available') {
     return (
       <ModuleUnavailable
@@ -24,25 +24,49 @@ function AcademicYearCard({ section, now }) {
     )
   }
   const year = section.data
-  const start = new Date(year.start_date)
-  const end = new Date(year.end_date)
-  const progress = Math.min(100, Math.max(0, Math.round(((now - start) / (end - start)) * 100)))
+  if (!year) {
+    // The module exists but no year is current yet: prompt to set one up.
+    return (
+      <div className="flex h-full flex-col items-start rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4">
+        <span className="flex size-8 items-center justify-center rounded-lg bg-white text-slate-400 shadow-card ring-1 ring-slate-200/70">
+          <CalendarRange className="size-4" aria-hidden="true" />
+        </span>
+        <p className="mt-3 text-sm font-semibold text-slate-800">No current academic year</p>
+        <p className="mt-1 text-[13px] leading-relaxed text-slate-500">Set the year your school is running now to track its progress here.</p>
+        {can(PERMISSIONS.ACADEMIC_YEARS_READ) && (
+          <Link to="/academic-years" className="mt-3 text-[13px] font-medium text-brand-600 hover:text-brand-700">
+            Set up academic years
+          </Link>
+        )}
+      </div>
+    )
+  }
+  const progress = year.days_total ? Math.min(100, Math.max(0, Math.round((year.days_elapsed / year.days_total) * 100))) : 0
+  const ended = year.timeline === 'ended'
   return (
     <div className="rounded-xl border border-slate-200/80 p-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[13px] text-slate-500">Academic year</p>
-        <span className={cn('rounded-md px-2 py-0.5 text-xs font-medium capitalize ring-1 ring-inset', YEAR_STATUS[year.status] ?? YEAR_STATUS.completed)}>
-          {year.status}
+        <p className="text-[13px] text-slate-500">Current academic year</p>
+        <span className={cn('rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset', YEAR_STATUS_META[year.status]?.badge ?? YEAR_STATUS_META.completed.badge)}>
+          {YEAR_STATUS_META[year.status]?.label ?? year.status}
         </span>
       </div>
-      <p className="mt-1 text-lg font-semibold text-slate-900">{year.name}</p>
+      {can(PERMISSIONS.ACADEMIC_YEARS_READ) ? (
+        <Link to={`/academic-years/${year.id}`} className="mt-1 block text-lg font-semibold text-slate-900 hover:text-brand-700">
+          {year.name}
+        </Link>
+      ) : (
+        <p className="mt-1 text-lg font-semibold text-slate-900">{year.name}</p>
+      )}
       <p className="text-xs text-slate-500">
-        {formatDate(year.start_date)} – {formatDate(year.end_date)}
+        {formatDateOnly(year.start_date)} – {formatDateOnly(year.end_date)}
       </p>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label="Academic year progress">
         <div className="h-full rounded-full bg-brand-500" style={{ width: `${progress}%` }} />
       </div>
-      <p className="mt-1.5 text-xs text-slate-500">{progress}% complete</p>
+      <p className={cn('mt-1.5 text-xs', ended ? 'font-medium text-amber-700' : 'text-slate-500')}>
+        {ended ? 'Ended — set the next year as current' : year.timeline === 'not_started' ? 'Not started yet' : `${progress}% complete`}
+      </p>
     </div>
   )
 }
@@ -97,12 +121,12 @@ function ClassDistribution({ section }) {
   )
 }
 
-export function AcademicOverview({ academic, now, className }) {
+export function AcademicOverview({ academic, className }) {
   return (
     <Panel icon={BookOpenCheck} title="Academic overview" description="Academic year, enrollment and students by class." className={className}>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-          <AcademicYearCard section={academic.academic_year} now={now} />
+          <AcademicYearCard section={academic.academic_year} />
           <EnrollmentCard section={academic.enrollment} />
         </div>
         <ClassDistribution section={academic.class_distribution} />
