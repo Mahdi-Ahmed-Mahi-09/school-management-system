@@ -64,11 +64,13 @@ func run() error {
 	activityRepo := repository.NewPostgresActivityRepository(pool)
 	userSvc := service.NewUserService(userRepo, activityRepo, cfg.BcryptCost)
 	dashboardSvc := service.NewDashboardService(repository.NewPostgresDashboardRepository(pool), cfg.Timezone)
+	studentSvc := service.NewStudentService(repository.NewPostgresStudentRepository(pool), activityRepo, cfg.Timezone)
 
 	engine := router.New(router.Deps{
 		AuthService:      authSvc,
 		UserService:      userSvc,
 		DashboardService: dashboardSvc,
+		StudentService:   studentSvc,
 		Cookie:           handler.CookieConfig{Name: cfg.CookieName, Secure: cfg.CookieSecure, Domain: cfg.CookieDomain},
 		AllowedOrigins:   cfg.CORSAllowedOrigins,
 		LoginRateLimit:   cfg.LoginRateLimit,

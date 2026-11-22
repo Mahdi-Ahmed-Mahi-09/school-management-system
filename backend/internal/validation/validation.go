@@ -5,6 +5,7 @@ import (
 	"net/mail"
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 )
@@ -116,4 +117,62 @@ func Password(errs Errors, field, value string) {
 			errs.Add(field, "Password must contain at least one letter and one number.")
 		}
 	}
+}
+
+// PersonName validates a required person's name with a custom maximum length.
+func PersonName(errs Errors, field, label, value string, max int) {
+	if value == "" {
+		errs.Add(field, label+" is required.")
+		return
+	}
+	if utf8.RuneCountInString(value) > max {
+		errs.Add(field, label+" is too long.")
+		return
+	}
+	for _, r := range value {
+		if unicode.IsControl(r) || strings.ContainsRune("<>{}[]\\", r) {
+			errs.Add(field, label+" contains characters that are not allowed.")
+			return
+		}
+	}
+}
+
+// Text validates free text: required-ness, maximum length and control
+// characters (newlines are allowed only when multiline is true).
+func Text(errs Errors, field, label, value string, max int, required, multiline bool) {
+	if value == "" {
+		if required {
+			errs.Add(field, label+" is required.")
+		}
+		return
+	}
+	if utf8.RuneCountInString(value) > max {
+		errs.Add(field, label+" is too long.")
+		return
+	}
+	for _, r := range value {
+		if unicode.IsControl(r) && !(multiline && (r == '\n' || r == '\r')) {
+			errs.Add(field, label+" contains characters that are not allowed.")
+			return
+		}
+	}
+}
+
+// Date parses a required YYYY-MM-DD calendar date.
+func Date(errs Errors, field, label, value string) (time.Time, bool) {
+	if value == "" {
+		errs.Add(field, label+" is required.")
+		return time.Time{}, false
+	}
+	t, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		errs.Add(field, "Enter a valid date (YYYY-MM-DD).")
+		return time.Time{}, false
+	}
+	return t, true
+}
+
+// NormalizeText trims surrounding whitespace and normalises line endings.
+func NormalizeText(s string) string {
+	return strings.TrimSpace(strings.ReplaceAll(s, "\r\n", "\n"))
 }

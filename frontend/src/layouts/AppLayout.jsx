@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronsUpDown, KeyRound, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
+import { ChevronsUpDown, GraduationCap, KeyRound, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
 import { Wordmark } from '../components/brand/Logo'
 import { Alert, Avatar } from '../components/ui/Display'
 import { Menu } from '../components/ui/Menu'
@@ -16,6 +16,10 @@ const NAV_SECTIONS = [
       { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
       { to: '/profile', label: 'My profile', icon: UserRound, permission: PERMISSIONS.PROFILE_READ },
     ],
+  },
+  {
+    label: 'School',
+    items: [{ to: '/students', label: 'Students', icon: GraduationCap, permission: PERMISSIONS.STUDENTS_READ }],
   },
   {
     label: 'Administration',

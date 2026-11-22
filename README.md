@@ -49,6 +49,27 @@ An admin-only overview at `/`, backed by `GET /api/v1/admin/dashboard`.
   - Actions for future modules are shown disabled. No placeholder pages.
 - **Interface:** loading skeletons, error state with retry, manual refresh, and a responsive layout from mobile to wide desktop. The charting library (Recharts) is only downloaded by admins.
 
+### Feature 03 — Student Management
+
+Admin-only student records. These are separate from login accounts, because a student may never sign in.
+
+- **Pages:**
+  - Student list (`/students`) with real totals, search (name, student ID, phone, guardian), filters (status, gender, admission date range), sorting and pagination. The URL keeps the search, filters, sort order and page.
+  - Profile page (`/students/:id`) with sections for personal, contact, parent, guardian, emergency contact and admission details.
+  - A dedicated create/edit page with field-level validation.
+- **Fields:**
+  - Student ID: unique, case-insensitive, stored in upper case.
+  - Name, date of birth, gender, optional blood group, optional phone and email, address.
+  - Optional father's and mother's names and phones.
+  - Guardian (required), emergency contact (required), admission date, status.
+- **Photos:**
+  - In the browser, the photo is cropped to a square and resized before upload. This also strips location data.
+  - The server identifies the file type from its contents and accepts only JPEG, PNG or WebP up to 1 MB.
+  - Photos are stored in PostgreSQL (`student_photos`) and served only to authorised users.
+- **Deleting:** permanently removes the record and its photo, after the admin types the student ID to confirm.
+- **Activity and dashboard:** every change is written to the activity log. The dashboard's student KPI, enrollment and recent admissions now come from student records.
+- **Not included yet:** class and section placement, attendance and fees, and guardian portal links. Those future modules will reference `students.id`.
+
 ## Getting started
 
 ### 1. Database
@@ -120,6 +141,15 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | PATCH  | `/users/:id/status`     | Admin             | Activate or deactivate an account |
 | PUT    | `/users/:id/password`   | Admin             | Reset a password; signs the user out everywhere |
 | GET    | `/admin/dashboard`      | Admin (`dashboard:view_admin`) | Dashboard data; each section is marked `available` or `unavailable` |
+| GET    | `/students`             | Admin (`students:read`)   | List students: `search`, `status`, `gender`, `admitted_from`, `admitted_to`, `sort`, `order`, `page`, `page_size` |
+| GET    | `/students/stats`       | Admin (`students:read`)   | Total, active, inactive and admitted-this-month counts |
+| GET    | `/students/:id`         | Admin (`students:read`)   | Student details |
+| POST   | `/students`             | Admin (`students:create`) | Create a student |
+| PUT    | `/students/:id`         | Admin (`students:update`) | Replace a student's details |
+| DELETE | `/students/:id`         | Admin (`students:delete`) | Permanently delete a student and their photo |
+| GET    | `/students/:id/photo`   | Admin (`students:read`)   | The stored photo (cached privately when requested with `?v=`) |
+| PUT    | `/students/:id/photo`   | Admin (`students:update`) | Upload a photo (multipart form field `photo`) |
+| DELETE | `/students/:id/photo`   | Admin (`students:update`) | Remove the photo |
 
 ## Project structure
 

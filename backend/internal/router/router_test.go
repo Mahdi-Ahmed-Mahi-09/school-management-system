@@ -36,11 +36,14 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 	authSvc := service.NewAuthService(users, memrepo.NewTokenRepo(), tm, 4)
 	activity := memrepo.NewActivityRepo()
 	userSvc := service.NewUserService(users, activity, 4)
-	dashboardSvc := service.NewDashboardService(&memrepo.DashboardRepo{Users: users, Activity: activity}, time.UTC)
+	studentRepo := memrepo.NewStudentRepo()
+	dashboardSvc := service.NewDashboardService(&memrepo.DashboardRepo{Users: users, Activity: activity, Students: studentRepo}, time.UTC)
+	studentSvc := service.NewStudentService(studentRepo, activity, time.UTC)
 	s := &testServer{t: t, users: users, tm: tm, engine: New(Deps{
 		AuthService:      authSvc,
 		UserService:      userSvc,
 		DashboardService: dashboardSvc,
+		StudentService:   studentSvc,
 		Cookie:           handler.CookieConfig{Name: cookieName},
 		AllowedOrigins:   []string{"http://localhost:5173"},
 		LoginRateLimit:   loginLimit,
@@ -428,7 +431,7 @@ func TestAdminDashboardAuthorization(t *testing.T) {
 	data := res.data()
 	overview := data["overview"].(map[string]any)
 	students := overview["students"].(map[string]any)
-	if students["status"] != "available" || students["data"].(map[string]any)["total"] != float64(2) {
+	if students["status"] != "available" || students["data"].(map[string]any)["total"] != float64(0) {
 		t.Errorf("students section: %v", students)
 	}
 	classes := overview["classes"].(map[string]any)

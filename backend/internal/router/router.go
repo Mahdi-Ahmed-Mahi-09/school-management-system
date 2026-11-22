@@ -18,13 +18,16 @@ import (
 	"github.com/Mahdi-Ahmed-Mahi-09/school-management-system/backend/internal/service"
 )
 
-const maxBodyBytes = 1 << 20 // 1 MiB
+// maxBodyBytes caps every request body: 2 MiB leaves room for a 1 MiB photo
+// plus multipart overhead; JSON endpoints are far smaller.
+const maxBodyBytes = 2 << 20
 
 // Deps are the collaborators the router needs.
 type Deps struct {
 	AuthService      *service.AuthService
 	UserService      *service.UserService
 	DashboardService *service.DashboardService
+	StudentService   *service.StudentService
 	Cookie           handler.CookieConfig
 	AllowedOrigins   []string
 	LoginRateLimit   int
@@ -57,6 +60,7 @@ func New(d Deps) *gin.Engine {
 	profileH := handler.NewProfileHandler(d.UserService, d.AuthService, authH)
 	userH := handler.NewUserHandler(d.UserService)
 	dashboardH := handler.NewDashboardHandler(d.DashboardService)
+	studentH := handler.NewStudentHandler(d.StudentService)
 	loginLimiter := middleware.NewRateLimiter(d.LoginRateLimit, d.LoginRateWindow)
 
 	api := r.Group("/api/v1", middleware.CSRFGuard())
@@ -101,6 +105,18 @@ func New(d Deps) *gin.Engine {
 	// Admin dashboard: admin role AND the dashboard permission are both required.
 	admin := protected.Group("/admin", middleware.RequireRoles(models.RoleAdmin))
 	admin.GET("/dashboard", middleware.RequirePermission(models.PermDashboardAdmin), dashboardH.Admin)
+
+	// Student management: admin role AND the specific permission are both required.
+	students := protected.Group("/students", middleware.RequireRoles(models.RoleAdmin))
+	students.GET("", middleware.RequirePermission(models.PermStudentsRead), studentH.List)
+	students.GET("/stats", middleware.RequirePermission(models.PermStudentsRead), studentH.Stats)
+	students.GET("/:id", middleware.RequirePermission(models.PermStudentsRead), studentH.Get)
+	students.GET("/:id/photo", middleware.RequirePermission(models.PermStudentsRead), studentH.Photo)
+	students.POST("", middleware.RequirePermission(models.PermStudentsCreate), studentH.Create)
+	students.PUT("/:id", middleware.RequirePermission(models.PermStudentsUpdate), studentH.Update)
+	students.PUT("/:id/photo", middleware.RequirePermission(models.PermStudentsUpdate), studentH.UploadPhoto)
+	students.DELETE("/:id/photo", middleware.RequirePermission(models.PermStudentsUpdate), studentH.RemovePhoto)
+	students.DELETE("/:id", middleware.RequirePermission(models.PermStudentsDelete), studentH.Delete)
 
 	return r
 }

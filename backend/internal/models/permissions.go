@@ -16,6 +16,11 @@ const (
 	PermUsersResetPassword Permission = "users:reset_password"
 
 	PermDashboardAdmin Permission = "dashboard:view_admin"
+
+	PermStudentsRead   Permission = "students:read"
+	PermStudentsCreate Permission = "students:create"
+	PermStudentsUpdate Permission = "students:update"
+	PermStudentsDelete Permission = "students:delete"
 )
 
 // selfService permissions are granted to every authenticated role.
@@ -29,6 +34,10 @@ var userAdministration = []Permission{
 	PermUsersManageStatus,
 	PermUsersResetPassword,
 	PermDashboardAdmin,
+	PermStudentsRead,
+	PermStudentsCreate,
+	PermStudentsUpdate,
+	PermStudentsDelete,
 }
 
 // rolePermissions is the single source of truth for role-based access control.

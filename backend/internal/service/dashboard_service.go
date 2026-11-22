@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	dashboardGrowthMonths  = 6
-	dashboardActivityLimit = 8
+	dashboardGrowthMonths   = 6
+	dashboardActivityLimit  = 8
+	dashboardAdmissionLimit = 5
 )
 
 // implementedModules lists modules whose data exists in the database.
@@ -20,7 +21,7 @@ const (
 var implementedModules = map[string]bool{
 	models.ModuleUsers.Key:      true,
 	models.ModuleAcademic.Key:   false,
-	models.ModuleStudents.Key:   false,
+	models.ModuleStudents.Key:   true, // Feature 03
 	models.ModuleAttendance.Key: false,
 	models.ModuleFees.Key:       false,
 	models.ModuleExams.Key:      false,
@@ -69,10 +70,13 @@ func monthStarts(now time.Time, loc *time.Location, n int) []time.Time {
 // module is not implemented are explicitly marked unavailable — never zero.
 func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDashboard, error) {
 	now := s.now()
+	y, m, day := now.In(s.loc).Date()
 	snap, err := s.repo.AdminSnapshot(ctx, repository.DashboardQuery{
-		MonthStarts:   monthStarts(now, s.loc, dashboardGrowthMonths),
-		Timezone:      s.loc.String(),
-		ActivityLimit: dashboardActivityLimit,
+		MonthStarts:    monthStarts(now, s.loc, dashboardGrowthMonths),
+		Timezone:       s.loc.String(),
+		ActivityLimit:  dashboardActivityLimit,
+		AdmissionLimit: dashboardAdmissionLimit,
+		Today:          time.Date(y, m, day, 0, 0, 0, 0, time.UTC),
 	})
 	if err != nil {
 		return nil, apperror.Internal(err)
@@ -86,7 +90,8 @@ func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDas
 		GeneratedAt: now.UTC(),
 		Timezone:    s.loc.String(),
 		Overview: models.DashboardOverview{
-			Students:  roleSection(models.RoleStudent),
+			// Students are counted from student records (Feature 03), not login accounts.
+			Students:  models.Available(snap.Students),
 			Teachers:  roleSection(models.RoleTeacher),
 			Guardians: roleSection(models.RoleGuardian),
 			Classes:   models.Unavailable[models.CountMetric](models.ModuleAcademic),
@@ -95,13 +100,18 @@ func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDas
 		Accounts:      models.Available(snap.Accounts),
 		AccountGrowth: models.Available(snap.AccountGrowth),
 		Academic: models.AcademicOverview{
-			AcademicYear:      models.Unavailable[models.AcademicYear](models.ModuleAcademic),
-			Enrollment:        models.Unavailable[models.EnrollmentSummary](models.ModuleStudents),
-			ClassDistribution: models.Unavailable[[]models.ClassDistributionItem](models.ModuleStudents),
+			AcademicYear: models.Unavailable[models.AcademicYear](models.ModuleAcademic),
+			Enrollment: models.Available(models.EnrollmentSummary{
+				TotalEnrolled: snap.Students.Active,
+				NewThisMonth:  snap.Students.NewThisMonth,
+				Monthly:       snap.AdmissionsByMonth,
+			}),
+			// Placing students in classes needs the academic module.
+			ClassDistribution: models.Unavailable[[]models.ClassDistributionItem](models.ModuleAcademic),
 		},
 		Attendance:       models.Unavailable[models.AttendanceSummary](models.ModuleAttendance),
 		Fees:             models.Unavailable[models.FeeSummary](models.ModuleFees),
-		RecentAdmissions: models.Unavailable[[]models.Admission](models.ModuleStudents),
+		RecentAdmissions: models.Available(snap.RecentAdmissions),
 		RecentNotices:    models.Unavailable[[]models.Notice](models.ModuleNotices),
 		RecentActivity:   models.Available(snap.RecentActivity),
 	}

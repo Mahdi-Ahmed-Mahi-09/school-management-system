@@ -54,6 +54,10 @@ export const PERMISSIONS = {
   USERS_MANAGE_STATUS: 'users:manage_status',
   USERS_RESET_PASSWORD: 'users:reset_password',
   DASHBOARD_ADMIN: 'dashboard:view_admin',
+  STUDENTS_READ: 'students:read',
+  STUDENTS_CREATE: 'students:create',
+  STUDENTS_UPDATE: 'students:update',
+  STUDENTS_DELETE: 'students:delete',
 }
 
 export const PERMISSION_LABELS = {
@@ -67,4 +71,8 @@ export const PERMISSION_LABELS = {
   'users:manage_status': 'Activate and deactivate accounts',
   'users:reset_password': 'Reset user passwords',
   'dashboard:view_admin': 'View the school-wide admin dashboard',
+  'students:read': 'View student records',
+  'students:create': 'Add students',
+  'students:update': 'Edit student records and photos',
+  'students:delete': 'Delete student records',
 }

@@ -30,6 +30,7 @@ func TestMonthStarts(t *testing.T) {
 type dashFixture struct {
 	*fixture
 	activity  *memrepo.ActivityRepo
+	students  *memrepo.StudentRepo
 	dashboard *DashboardService
 }
 
@@ -38,10 +39,12 @@ func newDashFixture(t *testing.T) *dashFixture {
 	f := newFixture(t)
 	activity := memrepo.NewActivityRepo()
 	f.svc = NewUserService(f.users, activity, cost)
+	students := memrepo.NewStudentRepo()
 	return &dashFixture{
 		fixture:   f,
 		activity:  activity,
-		dashboard: NewDashboardService(&memrepo.DashboardRepo{Users: f.users, Activity: activity}, time.UTC),
+		students:  students,
+		dashboard: NewDashboardService(&memrepo.DashboardRepo{Users: f.users, Activity: activity, Students: students}, time.UTC),
 	}
 }
 
@@ -62,9 +65,10 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// The Students KPI counts student records, not login accounts: none exist yet,
+	// so this is a confirmed zero.
 	students := d.Overview.Students
-	if students.Status != models.SectionAvailable || students.Data.Total != 2 || students.Data.Active != 1 ||
-		students.Data.Inactive != 1 || students.Data.NewThisMonth != 2 {
+	if students.Status != models.SectionAvailable || students.Data.Total != 0 {
 		t.Errorf("students = %+v %+v", students, students.Data)
 	}
 	if d.Overview.Teachers.Data.Total != 1 {
@@ -96,11 +100,9 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 		"classes":            {d.Overview.Classes.Status, d.Overview.Classes.Module, d.Overview.Classes.Data != nil},
 		"sections":           {d.Overview.Sections.Status, d.Overview.Sections.Module, d.Overview.Sections.Data != nil},
 		"academic_year":      {d.Academic.AcademicYear.Status, d.Academic.AcademicYear.Module, d.Academic.AcademicYear.Data != nil},
-		"enrollment":         {d.Academic.Enrollment.Status, d.Academic.Enrollment.Module, d.Academic.Enrollment.Data != nil},
 		"class_distribution": {d.Academic.ClassDistribution.Status, d.Academic.ClassDistribution.Module, d.Academic.ClassDistribution.Data != nil},
 		"attendance":         {d.Attendance.Status, d.Attendance.Module, d.Attendance.Data != nil},
 		"fees":               {d.Fees.Status, d.Fees.Module, d.Fees.Data != nil},
-		"recent_admissions":  {d.RecentAdmissions.Status, d.RecentAdmissions.Module, d.RecentAdmissions.Data != nil},
 		"recent_notices":     {d.RecentNotices.Status, d.RecentNotices.Module, d.RecentNotices.Data != nil},
 	}
 	for name, c := range checks {
@@ -109,16 +111,18 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 		}
 	}
 
-	var usersModule *models.ModuleStatus
-	for i := range d.Modules {
-		if d.Modules[i].Key == models.ModuleUsers.Key {
-			usersModule = &d.Modules[i]
-		} else if d.Modules[i].Available {
-			t.Errorf("module %s reported available", d.Modules[i].Key)
-		}
+	if d.Academic.Enrollment.Status != models.SectionAvailable || d.RecentAdmissions.Status != models.SectionAvailable {
+		t.Error("enrollment and recent admissions should be available now that students exist")
 	}
-	if usersModule == nil || !usersModule.Available {
-		t.Error("users module should be available")
+	if m := d.Academic.ClassDistribution.Module; m == nil || m.Key != models.ModuleAcademic.Key {
+		t.Errorf("class distribution should wait for the academic module: %+v", m)
+	}
+
+	wantAvailable := map[string]bool{models.ModuleUsers.Key: true, models.ModuleStudents.Key: true}
+	for _, m := range d.Modules {
+		if m.Available != wantAvailable[m.Key] {
+			t.Errorf("module %s available = %v", m.Key, m.Available)
+		}
 	}
 }
 
@@ -205,5 +209,45 @@ func TestAdminDashboardHidesInternalErrors(t *testing.T) {
 	ae := appErr(t, err)
 	if ae.Status != 500 || ae.Message == "connection refused" {
 		t.Errorf("internal error leaked or wrong status: %+v", ae)
+	}
+}
+
+func TestAdminDashboardStudentSections(t *testing.T) {
+	f := newDashFixture(t)
+	svc := NewStudentService(f.students, f.activity, time.UTC)
+	today := time.Now().UTC()
+	thisMonth := today.Format(models.DateLayout)
+	lastYear := today.AddDate(-1, 0, 0).Format(models.DateLayout)
+	future := today.AddDate(0, 2, 0).Format(models.DateLayout)
+
+	mk := func(id, name, admitted, status string) {
+		in := validStudentInput()
+		in.AdmissionNumber, in.FullName, in.AdmissionDate, in.Status = id, name, admitted, status
+		if _, err := svc.Create(f.ctx, f.admin, in); err != nil {
+			t.Fatalf("create %s: %v", id, err)
+		}
+	}
+	mk("S-1", "Ayesha Rahman", thisMonth, "active")
+	mk("S-2", "Rafi Karim", lastYear, "inactive")
+	mk("S-3", "Nadia Hossain", future, "active") // admitted in the future: not "recent"
+
+	d, err := f.dashboard.AdminDashboard(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := d.Overview.Students.Data
+	if s.Total != 3 || s.Active != 2 || s.Inactive != 1 || s.NewThisMonth != 1 {
+		t.Errorf("student KPI = %+v", s)
+	}
+	e := d.Academic.Enrollment.Data
+	if e.TotalEnrolled != 2 || e.NewThisMonth != 1 || len(e.Monthly) != 6 || e.Monthly[5].Count != 1 {
+		t.Errorf("enrollment = %+v", e)
+	}
+	recent := *d.RecentAdmissions.Data
+	if len(recent) != 2 || recent[0].AdmissionNumber != "S-1" || recent[1].AdmissionNumber != "S-2" {
+		t.Errorf("recent admissions = %+v", recent)
+	}
+	if recent[0].ClassName != nil || recent[0].SectionName != nil {
+		t.Error("class/section must be null until the academic module exists")
 	}
 }

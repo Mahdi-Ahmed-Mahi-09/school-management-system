@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
-  ArrowDown,
-  ArrowUp,
-  ChevronsUpDown,
   Filter,
-  MoreHorizontal,
   Search,
   SearchX,
   UserCheck,
@@ -19,59 +15,15 @@ import { usersApi } from '../../api/services'
 import { Button } from '../../components/ui/Button'
 import { Avatar, Card, EmptyState, ErrorState, PageHeader, RoleBadge, Skeleton, StatCard, StatusBadge } from '../../components/ui/Display'
 import { Select } from '../../components/ui/Field'
-import { Menu } from '../../components/ui/Menu'
+import { RowActionsMenu, SearchInput, SortHeader } from '../../components/ui/Table'
 import { Pagination } from '../../components/ui/Pagination'
 import { useUserActions } from '../../components/users/useUserActions'
 import { useAuth } from '../../hooks/useAuth'
+import { useListParams } from '../../hooks/useListParams'
 import { PERMISSIONS, ROLE_META, ROLES } from '../../lib/roles'
-import { cn, formatDate, formatRelative } from '../../lib/utils'
+import { formatDate, formatRelative } from '../../lib/utils'
 
 const PAGE_SIZE = 10
-
-/** Debounced copy of value, plus a setter to update it immediately. */
-function useDebounced(value, delay = 300) {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(id)
-  }, [value, delay])
-  return [debounced, setDebounced]
-}
-
-function ActionsMenu({ user, items }) {
-  return (
-    <Menu
-      label={`Actions for ${user.full_name}`}
-      items={items}
-      trigger={(props) => (
-        <button
-          {...props}
-          type="button"
-          className="flex size-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-brand-500/40 aria-expanded:bg-slate-100 aria-expanded:text-slate-700"
-        >
-          <MoreHorizontal className="size-4" />
-        </button>
-      )}
-    />
-  )
-}
-
-function SortHeader({ label, field, sort, order, onSort, className }) {
-  const active = sort === field
-  const Icon = !active ? ChevronsUpDown : order === 'asc' ? ArrowUp : ArrowDown
-  return (
-    <th scope="col" className={cn('px-4 py-3 text-left', className)} aria-sort={active ? (order === 'asc' ? 'ascending' : 'descending') : 'none'}>
-      <button
-        type="button"
-        onClick={() => onSort(field)}
-        className={cn('inline-flex items-center gap-1 rounded transition-colors hover:text-slate-900', active && 'text-slate-900')}
-      >
-        {label}
-        <Icon className={cn('size-3.5', active ? 'text-slate-600' : 'text-slate-300')} aria-hidden="true" />
-      </button>
-    </th>
-  )
-}
 
 function TableSkeleton() {
   return Array.from({ length: 6 }, (_, i) => (
@@ -96,49 +48,16 @@ function TableSkeleton() {
 
 export default function UsersPage() {
   const { user: me, can } = useAuth()
-  const [params, setParams] = useSearchParams()
-  const [searchInput, setSearchInput] = useState(params.get('q') ?? '')
-  const [search, setSearchNow] = useDebounced(searchInput.trim())
+  const { params, updateParams, searchInput, setSearchInput, clearSearch, page } = useListParams()
 
   const role = params.get('role') ?? ''
   const status = params.get('status') ?? ''
   const sort = params.get('sort') ?? 'created_at'
   const order = params.get('order') ?? (sort === 'created_at' || sort === 'last_login_at' ? 'desc' : 'asc')
-  const page = Math.max(1, Number(params.get('page')) || 1)
 
   const [list, setList] = useState({ loading: true, error: null, users: [], meta: null })
   const [stats, setStats] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
-
-  // React Router's functional setSearchParams computes from the params of the
-  // current render, so two updates in the same tick would overwrite each other.
-  // Track the latest params in a ref so consecutive updates compose.
-  const latestParams = useRef(params)
-  useEffect(() => {
-    latestParams.current = params
-  }, [params])
-
-  const updateParams = useCallback(
-    (changes, { resetPage = true } = {}) => {
-      const next = new URLSearchParams(latestParams.current)
-      for (const [k, v] of Object.entries(changes)) {
-        if (v === '' || v == null) next.delete(k)
-        else next.set(k, String(v))
-      }
-      if (resetPage) next.delete('page')
-      latestParams.current = next
-      setParams(next, { replace: true })
-    },
-    [setParams],
-  )
-
-  // Keep the debounced search in the URL — only when it actually changes.
-  const lastSearch = useRef(search)
-  useEffect(() => {
-    if (search === lastSearch.current) return
-    lastSearch.current = search
-    updateParams({ q: search })
-  }, [search, updateParams])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -198,9 +117,7 @@ export default function UsersPage() {
 
   const hasFilters = !!(params.get('q') || role || status)
   const clearFilters = () => {
-    setSearchInput('')
-    // Reset the debounced value too, so re-typing the same term is detected.
-    setSearchNow('')
+    clearSearch()
     updateParams({ q: '', role: '', status: '' })
   }
 
@@ -229,18 +146,13 @@ export default function UsersPage() {
 
       <Card className="overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:px-6 lg:flex-row lg:items-center">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            <input
-              type="search"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search by name, email or username"
-              aria-label="Search users"
-              maxLength={100}
-              className="h-10 w-full rounded-lg bg-white pr-3 pl-9 text-sm shadow-sm ring-1 ring-slate-200 ring-inset placeholder:text-slate-400 hover:ring-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-            />
-          </div>
+          <SearchInput
+            icon={Search}
+            value={searchInput}
+            onChange={setSearchInput}
+            placeholder="Search by name, email or username"
+            label="Search users"
+          />
           <div className="grid grid-cols-2 gap-3 sm:flex">
             <Select aria-label="Filter by role" icon={Filter} value={role} onChange={(e) => updateParams({ role: e.target.value })} className="sm:w-40">
               <option value="">All roles</option>
@@ -337,7 +249,7 @@ export default function UsersPage() {
                         <td className="hidden px-4 py-3 text-slate-500 xl:table-cell">{formatRelative(u.last_login_at)}</td>
                         <td className="hidden px-4 py-3 text-slate-500 xl:table-cell">{formatDate(u.created_at)}</td>
                         <td className="px-4 py-3 text-right sm:pr-6">
-                          <ActionsMenu user={u} items={actions.menuItems(u)} />
+                          <RowActionsMenu label={`Actions for ${u.full_name}`} items={actions.menuItems(u)} />
                         </td>
                       </tr>
                     ))
@@ -371,7 +283,7 @@ export default function UsersPage() {
                           </span>
                         </span>
                       </Link>
-                      <ActionsMenu user={u} items={actions.menuItems(u)} />
+                      <RowActionsMenu label={`Actions for ${u.full_name}`} items={actions.menuItems(u)} />
                     </li>
                   ))}
             </ul>

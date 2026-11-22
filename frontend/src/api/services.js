@@ -22,6 +22,24 @@ export const dashboardApi = {
   admin: () => api.get('/admin/dashboard').then(unwrap),
 }
 
+export const studentsApi = {
+  /** Resolves to `{ students, meta }`. */
+  list: (params, { signal } = {}) =>
+    api.get('/students', { params, signal }).then((res) => ({ students: res.data.data, meta: res.data.meta })),
+  stats: () => api.get('/students/stats').then(unwrap),
+  get: (id) => api.get(`/students/${id}`).then(unwrap),
+  create: (payload) => api.post('/students', payload).then(unwrap),
+  update: (id, payload) => api.put(`/students/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/students/${id}`).then(unwrap),
+  uploadPhoto: (id, blob) => {
+    const form = new FormData()
+    form.append('photo', blob, 'photo.jpg')
+    // Let the browser set the multipart boundary.
+    return api.put(`/students/${id}/photo`, form, { headers: { 'Content-Type': undefined } }).then(unwrap)
+  },
+  removePhoto: (id) => api.delete(`/students/${id}/photo`).then(unwrap),
+}
+
 export const usersApi = {
   /** Resolves to `{ users, meta }`. */
   list: (params, { signal } = {}) =>

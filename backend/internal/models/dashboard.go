@@ -158,10 +158,12 @@ type Admission struct {
 	ID              uuid.UUID `json:"id"`
 	FullName        string    `json:"full_name"`
 	AdmissionNumber string    `json:"admission_number"`
-	ClassName       string    `json:"class_name"`
-	SectionName     string    `json:"section_name"`
-	AdmittedOn      string    `json:"admitted_on"` // YYYY-MM-DD
-	Status          string    `json:"status"`
+	// Class and section are null until the academic module places students.
+	ClassName   *string `json:"class_name"`
+	SectionName *string `json:"section_name"`
+	PhotoURL    *string `json:"photo_url"`
+	AdmittedOn  string  `json:"admitted_on"` // YYYY-MM-DD
+	Status      string  `json:"status"`
 }
 
 // Notice is a recently published notice (owned by the notices module).

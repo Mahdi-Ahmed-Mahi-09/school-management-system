@@ -18,8 +18,11 @@ type DashboardQuery struct {
 	// first, in the school's timezone. The last one is the current month.
 	MonthStarts []time.Time
 	// Timezone is an IANA name used to bucket timestamps into months.
-	Timezone      string
-	ActivityLimit int
+	Timezone       string
+	ActivityLimit  int
+	AdmissionLimit int
+	// Today is the current date in the school's timezone.
+	Today time.Time
 }
 
 // DashboardSnapshot is the raw data behind the admin dashboard, read in a
@@ -28,6 +31,11 @@ type DashboardSnapshot struct {
 	Accounts       models.AccountSummary
 	AccountGrowth  []models.AccountGrowthPoint
 	RecentActivity []models.ActivityItem
+
+	// Student records (Feature 03).
+	Students          models.RoleMetric
+	AdmissionsByMonth []models.MonthCount
+	RecentAdmissions  []models.Admission
 }
 
 // DashboardRepository reads aggregated dashboard data.

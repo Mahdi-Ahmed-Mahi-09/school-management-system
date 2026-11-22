@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -119,6 +120,10 @@ func (r *PostgresDashboardRepository) AdminSnapshot(ctx context.Context, q Dashb
 		}
 		snap.AccountGrowth = points
 
+		if err := studentSnapshot(ctx, tx, q, snap); err != nil {
+			return err
+		}
+
 		// 3. Recent activity with the actor's current name (one join, no N+1).
 		rows, err = tx.Query(ctx, `
 			SELECT l.id, l.action, l.entity_type, l.entity_id, l.summary, l.metadata, l.created_at,
@@ -155,4 +160,86 @@ func (r *PostgresDashboardRepository) AdminSnapshot(ctx context.Context, q Dashb
 		return nil, err
 	}
 	return snap, nil
+}
+
+// studentSnapshot adds student metrics to the snapshot: totals, admissions
+// per month and the most recent admissions (three aggregate queries).
+// Admission dates are calendar dates, compared without timezone conversion.
+func studentSnapshot(ctx context.Context, tx pgx.Tx, q DashboardQuery, snap *DashboardSnapshot) error {
+	first := dateArg(q.MonthStarts[0])
+	current := dateArg(q.MonthStarts[len(q.MonthStarts)-1])
+	nextMonth := current.AddDate(0, 1, 0)
+	today := dateArg(q.Today)
+
+	if err := tx.QueryRow(ctx, `
+		SELECT count(*),
+		       count(*) FILTER (WHERE status = 'active'),
+		       count(*) FILTER (WHERE status = 'inactive'),
+		       count(*) FILTER (WHERE admission_date >= $1 AND admission_date < $2)
+		FROM students`, current, nextMonth).
+		Scan(&snap.Students.Total, &snap.Students.Active, &snap.Students.Inactive, &snap.Students.NewThisMonth); err != nil {
+		return err
+	}
+
+	counts := map[string]int{}
+	rows, err := tx.Query(ctx, `
+		SELECT to_char(admission_date, 'YYYY-MM'), count(*)
+		FROM students
+		WHERE admission_date >= $1 AND admission_date < $2
+		GROUP BY 1`, first, nextMonth)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var (
+			month string
+			n     int
+		)
+		if err := rows.Scan(&month, &n); err != nil {
+			rows.Close()
+			return err
+		}
+		counts[month] = n
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	snap.AdmissionsByMonth = make([]models.MonthCount, len(q.MonthStarts))
+	for i, m := range q.MonthStarts {
+		key := m.Format("2006-01")
+		snap.AdmissionsByMonth[i] = models.MonthCount{Month: key, Count: counts[key]}
+	}
+
+	// Most recent admissions up to today (future-dated admissions are excluded).
+	rows, err = tx.Query(ctx, `
+		SELECT id, full_name, admission_number, admission_date, status, photo_updated_at
+		FROM students
+		WHERE admission_date <= $1
+		ORDER BY admission_date DESC, created_at DESC
+		LIMIT $2`, today, q.AdmissionLimit)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	snap.RecentAdmissions = []models.Admission{}
+	for rows.Next() {
+		var (
+			st       models.Student
+			status   string
+			admitted time.Time
+		)
+		if err := rows.Scan(&st.ID, &st.FullName, &st.AdmissionNumber, &admitted, &status, &st.PhotoUpdatedAt); err != nil {
+			return err
+		}
+		snap.RecentAdmissions = append(snap.RecentAdmissions, models.Admission{
+			ID:              st.ID,
+			FullName:        st.FullName,
+			AdmissionNumber: st.AdmissionNumber,
+			AdmittedOn:      admitted.Format(models.DateLayout),
+			Status:          status,
+			PhotoURL:        st.PhotoURL(),
+		})
+	}
+	return rows.Err()
 }

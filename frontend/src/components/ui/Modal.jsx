@@ -126,6 +126,7 @@ export function ConfirmDialog({
   confirmLabel = 'Confirm',
   tone = 'danger',
   loading = false,
+  confirmDisabled = false,
   icon: Icon = AlertTriangle,
   children,
 }) {
@@ -150,7 +151,7 @@ export function ConfirmDialog({
         <Button variant="secondary" onClick={onClose} disabled={loading}>
           Cancel
         </Button>
-        <Button variant={tone === 'brand' ? 'primary' : tone} onClick={onConfirm} loading={loading} data-autofocus>
+        <Button variant={tone === 'brand' ? 'primary' : tone} onClick={onConfirm} loading={loading} disabled={confirmDisabled}>
           {confirmLabel}
         </Button>
       </div>

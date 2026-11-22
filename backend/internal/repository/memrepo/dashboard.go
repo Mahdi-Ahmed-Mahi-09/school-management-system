@@ -54,6 +54,7 @@ func (r *ActivityRepo) Entries() []models.ActivityEntry {
 type DashboardRepo struct {
 	Users    *UserRepo
 	Activity *ActivityRepo
+	Students *StudentRepo // optional
 }
 
 var _ repository.DashboardRepository = (*DashboardRepo)(nil)
@@ -137,5 +138,49 @@ func (r *DashboardRepo) AdminSnapshot(_ context.Context, q repository.DashboardQ
 		}
 		snap.RecentActivity = append(snap.RecentActivity, item)
 	}
+	r.studentSnapshot(q, snap)
 	return snap, nil
+}
+
+func (r *DashboardRepo) studentSnapshot(q repository.DashboardQuery, snap *repository.DashboardSnapshot) {
+	snap.AdmissionsByMonth = make([]models.MonthCount, len(q.MonthStarts))
+	index := map[string]int{}
+	for i, m := range q.MonthStarts {
+		snap.AdmissionsByMonth[i].Month = m.Format("2006-01")
+		index[snap.AdmissionsByMonth[i].Month] = i
+	}
+	snap.RecentAdmissions = []models.Admission{}
+	if r.Students == nil {
+		return
+	}
+	current := q.MonthStarts[len(q.MonthStarts)-1].Format("2006-01")
+	today := q.Today.Format(models.DateLayout)
+	all := r.Students.All()
+	sort.Slice(all, func(i, j int) bool {
+		if !all[i].AdmissionDate.Equal(all[j].AdmissionDate) {
+			return all[i].AdmissionDate.After(all[j].AdmissionDate)
+		}
+		return all[i].CreatedAt.After(all[j].CreatedAt)
+	})
+	for _, s := range all {
+		snap.Students.Total++
+		if s.Status == models.StatusActive {
+			snap.Students.Active++
+		} else {
+			snap.Students.Inactive++
+		}
+		month := s.AdmissionDate.Format("2006-01")
+		if month == current {
+			snap.Students.NewThisMonth++
+		}
+		if i, ok := index[month]; ok {
+			snap.AdmissionsByMonth[i].Count++
+		}
+		if s.AdmissionDate.Format(models.DateLayout) <= today && len(snap.RecentAdmissions) < q.AdmissionLimit {
+			snap.RecentAdmissions = append(snap.RecentAdmissions, models.Admission{
+				ID: s.ID, FullName: s.FullName, AdmissionNumber: s.AdmissionNumber,
+				AdmittedOn: s.AdmissionDate.Format(models.DateLayout), Status: string(s.Status), PhotoURL: s.PhotoURL(),
+			})
+		}
+	}
 }

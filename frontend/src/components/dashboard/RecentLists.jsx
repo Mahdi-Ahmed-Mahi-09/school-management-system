@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom'
 import {
   Activity,
+  Camera,
+  GraduationCap,
   KeyRound,
   Megaphone,
   PencilLine,
   ShieldCheck,
+  Trash2,
   UserCheck,
   UserPlus,
   UserRoundPlus,
@@ -12,50 +15,64 @@ import {
 } from 'lucide-react'
 import { ROLE_META } from '../../lib/roles'
 import { cn, formatDate, formatDateTime, formatRelative } from '../../lib/utils'
-import { Avatar, Badge } from '../ui/Display'
+import { formatDateOnly } from '../../lib/students'
+import { StudentAvatar } from '../students/StudentAvatar'
+import { Badge, StatusBadge } from '../ui/Display'
 import { ModuleUnavailable, NoData, Panel } from './Panel'
 
 const linkClass = 'text-[13px] font-medium text-brand-600 hover:text-brand-700'
 
 /** Newly admitted students (students module). */
 export function RecentAdmissions({ section, className }) {
+  const available = section?.status === 'available'
   return (
-    <Panel icon={UserRoundPlus} title="Recent admissions" description="Students admitted most recently." className={className}>
-      {section?.status !== 'available' ? (
+    <Panel
+      icon={UserRoundPlus}
+      title="Recent admissions"
+      description="Students admitted most recently."
+      className={className}
+      action={
+        available && (
+          <Link to="/students" className={linkClass}>
+            View all
+          </Link>
+        )
+      }
+    >
+      {!available ? (
         <ModuleUnavailable
           module={section?.module}
           icon={UserRoundPlus}
           title="Admissions aren't recorded yet"
-          description="New students with admission number, class and section will be listed here."
-          action={
-            <Link to="/users?role=student" className={linkClass}>
-              View student accounts
-            </Link>
-          }
+          description="Newly admitted students will be listed here."
         />
       ) : section.data.length === 0 ? (
-        <NoData icon={UserRoundPlus} title="No admissions yet" />
+        <NoData
+          icon={UserRoundPlus}
+          title="No admissions yet"
+          description="Students appear here once they're added with an admission date."
+        />
       ) : (
         <ul className="-mx-2 divide-y divide-slate-100">
-          {section.data.map((a) => {
-            const [first, ...rest] = a.full_name.split(' ')
-            return (
-              <li key={a.id} className="flex items-center gap-3 px-2 py-3">
-                <Avatar user={{ id: a.id, first_name: first, last_name: rest.join(' ') }} size="sm" />
+          {section.data.map((a) => (
+            <li key={a.id}>
+              <Link to={`/students/${a.id}`} className="flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-slate-50">
+                <StudentAvatar student={a} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-slate-900">{a.full_name}</p>
                   <p className="truncate text-xs text-slate-500">
-                    #{a.admission_number} · {a.class_name}
+                    <span className="font-mono">{a.admission_number}</span>
+                    {a.class_name && ` · ${a.class_name}`}
                     {a.section_name && ` · ${a.section_name}`}
                   </p>
                 </div>
-                <div className="text-right">
-                  <Badge className="bg-slate-50 text-slate-600 ring-slate-500/15 capitalize">{a.status}</Badge>
-                  <p className="mt-1 text-xs text-slate-400">{formatDate(a.admitted_on)}</p>
+                <div className="shrink-0 text-right">
+                  <StatusBadge status={a.status} />
+                  <p className="mt-1 text-xs text-slate-400">{formatDateOnly(a.admitted_on)}</p>
                 </div>
-              </li>
-            )
-          })}
+              </Link>
+            </li>
+          ))}
         </ul>
       )}
     </Panel>
@@ -99,6 +116,11 @@ const ACTIVITY_META = {
   'user.role_changed': { icon: ShieldCheck, className: 'bg-violet-50 text-violet-600 ring-violet-100' },
   'user.status_changed': { icon: UserCheck, className: 'bg-amber-50 text-amber-600 ring-amber-100' },
   'user.password_reset': { icon: KeyRound, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
+  'student.created': { icon: GraduationCap, className: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
+  'student.updated': { icon: PencilLine, className: 'bg-sky-50 text-sky-600 ring-sky-100' },
+  'student.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
+  'student.photo_updated': { icon: Camera, className: 'bg-violet-50 text-violet-600 ring-violet-100' },
+  'student.photo_removed': { icon: Camera, className: 'bg-slate-100 text-slate-600 ring-slate-200' },
 }
 
 function activityMeta(item) {

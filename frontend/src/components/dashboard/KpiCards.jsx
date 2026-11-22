@@ -63,10 +63,18 @@ function roleContext(d) {
   return parts.join(' · ')
 }
 
+function studentContext(d) {
+  if (d.total === 0) return 'No students yet'
+  const parts = [`${formatNumber(d.active)} active`]
+  if (d.new_this_month > 0) parts.push(`+${formatNumber(d.new_this_month)} this month`)
+  else if (d.inactive > 0) parts.push(`${formatNumber(d.inactive)} inactive`)
+  return parts.join(' · ')
+}
+
 export function KpiCards({ overview }) {
   return (
     <section aria-label="Key figures" className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
-      <KpiCard label="Total students" icon={GraduationCap} tone="emerald" section={overview.students} to="/users?role=student" context={roleContext} />
+      <KpiCard label="Total students" icon={GraduationCap} tone="emerald" section={overview.students} to="/students" context={studentContext} />
       <KpiCard label="Total teachers" icon={Presentation} tone="sky" section={overview.teachers} to="/users?role=teacher" context={roleContext} />
       <KpiCard label="Total guardians" icon={HeartHandshake} tone="amber" section={overview.guardians} to="/users?role=guardian" context={roleContext} />
       <KpiCard label="Total classes" icon={LayoutGrid} tone="brand" section={overview.classes} context={(d) => `${formatNumber(d.total)} classes`} />
