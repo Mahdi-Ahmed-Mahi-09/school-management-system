@@ -79,14 +79,25 @@ function teacherContext(d) {
   return parts.join(' · ')
 }
 
+function classContext(d) {
+  if (d.total === 0) return 'No classes yet'
+  return d.inactive > 0 ? `${formatNumber(d.active)} active · ${formatNumber(d.inactive)} inactive` : `${formatNumber(d.active)} active`
+}
+
+/** Sections are counted for the current academic year only. */
+function sectionContext(d) {
+  if (!d.academic_year) return 'No current academic year'
+  return `In ${d.academic_year.name}`
+}
+
 export function KpiCards({ overview }) {
   return (
     <section aria-label="Key figures" className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
       <KpiCard label="Total students" icon={GraduationCap} tone="emerald" section={overview.students} to="/students" context={studentContext} />
       <KpiCard label="Total teachers" icon={Presentation} tone="sky" section={overview.teachers} to="/teachers" context={teacherContext} />
       <KpiCard label="Total guardians" icon={HeartHandshake} tone="amber" section={overview.guardians} to="/users?role=guardian" context={roleContext} />
-      <KpiCard label="Total classes" icon={LayoutGrid} tone="brand" section={overview.classes} context={(d) => `${formatNumber(d.total)} classes`} />
-      <KpiCard label="Total sections" icon={Rows3} tone="brand" section={overview.sections} context={(d) => `${formatNumber(d.total)} sections`} />
+      <KpiCard label="Total classes" icon={LayoutGrid} tone="brand" section={overview.classes} to="/classes" context={classContext} />
+      <KpiCard label="Total sections" icon={Rows3} tone="brand" section={overview.sections} to="/sections" context={sectionContext} />
     </section>
   )
 }

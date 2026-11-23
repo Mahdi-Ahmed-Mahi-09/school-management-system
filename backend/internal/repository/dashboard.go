@@ -42,6 +42,10 @@ type DashboardSnapshot struct {
 
 	// The current academic year, or nil if none is active (Feature 05).
 	CurrentAcademicYear *models.AcademicYear
+
+	// Classes, and sections in the current academic year (Feature 06).
+	Classes  models.ClassMetric
+	Sections models.SectionMetric
 }
 
 // DashboardRepository reads aggregated dashboard data.

@@ -5,6 +5,10 @@ import {
   CalendarPlus,
   Camera,
   CircleCheckBig,
+  LayoutGrid,
+  Power,
+  Rows3,
+  ArrowUpDown,
   GraduationCap,
   KeyRound,
   Megaphone,
@@ -135,6 +139,15 @@ const ACTIVITY_META = {
   'academic_year.activated': { icon: CalendarCheck2, className: 'bg-brand-50 text-brand-600 ring-brand-100' },
   'academic_year.completed': { icon: CircleCheckBig, className: 'bg-slate-100 text-slate-600 ring-slate-200' },
   'academic_year.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
+  'class.created': { icon: LayoutGrid, className: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
+  'class.updated': { icon: PencilLine, className: 'bg-sky-50 text-sky-600 ring-sky-100' },
+  'class.status_changed': { icon: Power, className: 'bg-amber-50 text-amber-600 ring-amber-100' },
+  'class.reordered': { icon: ArrowUpDown, className: 'bg-slate-100 text-slate-600 ring-slate-200' },
+  'class.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
+  'section.created': { icon: Rows3, className: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
+  'section.updated': { icon: PencilLine, className: 'bg-sky-50 text-sky-600 ring-sky-100' },
+  'section.status_changed': { icon: Power, className: 'bg-amber-50 text-amber-600 ring-amber-100' },
+  'section.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
 }
 
 function activityMeta(item) {

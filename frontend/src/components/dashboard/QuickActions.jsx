@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BookUser, BriefcaseBusiness, CalendarRange, ClipboardCheck, FilePenLine, GraduationCap, Megaphone, Presentation, Receipt, Users, Zap } from 'lucide-react'
+import { BookUser, BriefcaseBusiness, CalendarRange, LayoutGrid, ClipboardCheck, FilePenLine, GraduationCap, Megaphone, Presentation, Receipt, Users, Zap } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { PERMISSIONS } from '../../lib/roles'
 import { cn } from '../../lib/utils'
@@ -15,6 +15,7 @@ const ACTIONS = [
   { label: 'Manage students', icon: BookUser, module: 'students', to: '/students', permission: PERMISSIONS.STUDENTS_READ },
   { label: 'Manage teachers', icon: BriefcaseBusiness, module: 'teachers', to: '/teachers', permission: PERMISSIONS.TEACHERS_READ },
   { label: 'Manage academic years', icon: CalendarRange, module: 'academic_years', to: '/academic-years', permission: PERMISSIONS.ACADEMIC_YEARS_READ },
+  { label: 'Manage classes & sections', icon: LayoutGrid, module: 'academic', to: '/classes', permission: PERMISSIONS.CLASSES_READ },
   { label: 'Manage users', icon: Users, module: 'users', to: '/users', permission: PERMISSIONS.USERS_READ },
   { label: 'Take attendance', icon: ClipboardCheck, module: 'attendance' },
   { label: 'Create examination', icon: FilePenLine, module: 'exams' },

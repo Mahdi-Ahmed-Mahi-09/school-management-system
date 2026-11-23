@@ -34,6 +34,16 @@ const (
 	PermAcademicYearsDelete Permission = "academic_years:delete"
 	// PermAcademicYearsManageStatus covers activating and completing years.
 	PermAcademicYearsManageStatus Permission = "academic_years:manage_status"
+
+	// Class and section update permissions also cover status and ordering.
+	PermClassesRead    Permission = "classes:read"
+	PermClassesCreate  Permission = "classes:create"
+	PermClassesUpdate  Permission = "classes:update"
+	PermClassesDelete  Permission = "classes:delete"
+	PermSectionsRead   Permission = "sections:read"
+	PermSectionsCreate Permission = "sections:create"
+	PermSectionsUpdate Permission = "sections:update"
+	PermSectionsDelete Permission = "sections:delete"
 )
 
 // selfService permissions are granted to every authenticated role.
@@ -61,6 +71,14 @@ var userAdministration = []Permission{
 	PermAcademicYearsUpdate,
 	PermAcademicYearsDelete,
 	PermAcademicYearsManageStatus,
+	PermClassesRead,
+	PermClassesCreate,
+	PermClassesUpdate,
+	PermClassesDelete,
+	PermSectionsRead,
+	PermSectionsCreate,
+	PermSectionsUpdate,
+	PermSectionsDelete,
 }
 
 // rolePermissions is the single source of truth for role-based access control.

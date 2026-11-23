@@ -111,7 +111,27 @@ Admin-only academic years: plan sessions, choose the current year and keep compl
   - The current year can't be deleted. Future modules reference `academic_years.id` with `ON DELETE RESTRICT`; deleting a referenced year returns `409 ACADEMIC_YEAR_IN_USE`.
   - "Today" is evaluated in the school's timezone (`APP_TIMEZONE`).
 - **Dashboard:** the academic year card shows the current year and its progress from the database, or a setup prompt when no year is current. A "Manage academic years" quick action and activity entries for academic year changes were added.
-- **Not included yet:** classes, sections, subjects, enrollment and promotion.
+- **Not included yet:** subjects, enrollment and promotion.
+
+### Feature 06 — Class & Section Management
+
+Admin-only classes and sections. A **class** is a reusable level (Play, KG, Class 6 …); its **sections** belong to one academic year, so Class 6 can have sections A–B in 2026–2027 and A–C in 2027–2028.
+
+- **Pages:**
+  - Classes (`/classes`): real totals (classes, active, inactive, sections), search (name, code, description), status filter, sorting, pagination, section counts for the current year, and a reorder dialog that saves the whole order atomically.
+  - Class details (`/classes/:id`): class information and its sections grouped by academic year.
+  - Sections (`/sections`): always scoped to one academic year (defaulting to the current year), with a class filter, search and status filter. It handles "no academic years" and "no current year" explicitly.
+  - Section details (`/sections/:id`): section, class and academic year information.
+- **Data:**
+  - Class: name (unique, case-insensitive), optional code (unique), display order, description, status.
+  - Section: class, academic year, name (unique within the class and year, case-insensitive), optional code (unique within the year), room, capacity (1–1000), description, status.
+- **Rules (enforced by the API and the database):**
+  - Sections need a valid class and academic year. New sections can only be added to an active class in the current or an upcoming year; moving a section follows the same rule. Sections in completed years can still be corrected in place.
+  - Deactivating a class keeps its sections, but none can be added or re-activated until the class is active again.
+  - Section writes share-lock the parent class and year in the same transaction, so they can't race a class deactivation or a year being completed.
+  - Foreign keys use `ON DELETE RESTRICT`: a class with sections (`CLASS_IN_USE`) or an academic year with sections (`ACADEMIC_YEAR_IN_USE`) can't be deleted. Sections referenced by future modules return `SECTION_IN_USE`.
+- **Dashboard:** the Total classes and Total sections KPIs are real. Sections are counted for the current academic year. "Students per class" stays unavailable until Student Enrollment exists.
+- **Not included yet:** teacher assignment, student enrollment and student counts. Future modules will reference `classes.id` / `sections.id`.
 
 ## Getting started
 
@@ -209,6 +229,21 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | PATCH  | `/academic-years/:id/activate` | Admin (`academic_years:manage_status`) | Make the year current; returns the demoted `previous` year |
 | PATCH  | `/academic-years/:id/complete` | Admin (`academic_years:manage_status`) | Mark the year completed |
 | DELETE | `/academic-years/:id`   | Admin (`academic_years:delete`) | Delete a year that is not current and not referenced |
+| GET    | `/classes`              | Admin (`classes:read`)    | List classes with section counts: `search`, `status`, `sort` (`display_order`, `name`, `created_at`), `order`, `page`, `page_size` |
+| GET    | `/classes/stats`        | Admin (`classes:read`)    | Class counts, total sections and current-year sections |
+| GET    | `/classes/:id`          | Admin (`classes:read`)    | Class details |
+| GET    | `/classes/:id/sections` | Admin (`sections:read`)   | The class's sections, newest academic year first (`academic_year_id` to filter) |
+| POST   | `/classes`              | Admin (`classes:create`)  | Create a class (`name`, `code`, `display_order`, `description`, `status`) |
+| PUT    | `/classes/:id`          | Admin (`classes:update`)  | Replace name, code, description (and display order if given) |
+| PUT    | `/classes/order`        | Admin (`classes:update`)  | Reorder: `class_ids` lists every class in the new order |
+| PATCH  | `/classes/:id/status`   | Admin (`classes:update`)  | Activate or deactivate (`status`) |
+| DELETE | `/classes/:id`          | Admin (`classes:delete`)  | Delete a class with no sections |
+| GET    | `/sections`             | Admin (`sections:read`)   | List sections: `academic_year_id`, `class_id`, `search`, `status`, `sort`, `order`, `page`, `page_size` |
+| GET    | `/sections/:id`         | Admin (`sections:read`)   | Section details with its class and academic year |
+| POST   | `/sections`             | Admin (`sections:create`) | Create a section (`academic_year_id`, `class_id`, `name`, `code`, `room_number`, `capacity`, `description`, `status`) |
+| PUT    | `/sections/:id`         | Admin (`sections:update`) | Replace a section's details (including its class/year, under the same rules) |
+| PATCH  | `/sections/:id/status`  | Admin (`sections:update`) | Activate or deactivate (`status`) |
+| DELETE | `/sections/:id`         | Admin (`sections:delete`) | Delete a section no other record references |
 
 ## Project structure
 

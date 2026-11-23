@@ -32,8 +32,10 @@ var (
 		Description: "Accounts for admins, teachers, students and guardians."}
 	ModuleAcademicYears = ModuleInfo{Key: "academic_years", Name: "Academic Year Management",
 		Description: "Academic years and the current school year."}
-	ModuleAcademic = ModuleInfo{Key: "academic", Name: "Academic Structure",
-		Description: "Classes, sections and student placement."}
+	ModuleAcademic = ModuleInfo{Key: "academic", Name: "Class & Section Management",
+		Description: "Classes and their sections for each academic year."}
+	ModuleEnrollment = ModuleInfo{Key: "enrollment", Name: "Student Enrollment & Promotion",
+		Description: "Placing students into classes and sections."}
 	ModuleStudents = ModuleInfo{Key: "students", Name: "Student Management",
 		Description: "Student admissions, enrollment and class placement."}
 	ModuleTeachers = ModuleInfo{Key: "teachers", Name: "Teacher Management",
@@ -78,11 +80,6 @@ type RoleMetric struct {
 	Active       int `json:"active"`
 	Inactive     int `json:"inactive"`
 	NewThisMonth int `json:"new_this_month"`
-}
-
-// CountMetric is a simple total.
-type CountMetric struct {
-	Total int `json:"total"`
 }
 
 // AccountSummary summarises all user accounts.
@@ -206,11 +203,11 @@ type ActivityItem struct {
 
 // DashboardOverview holds the KPI cards.
 type DashboardOverview struct {
-	Students  Section[RoleMetric]  `json:"students"`
-	Teachers  Section[RoleMetric]  `json:"teachers"`
-	Guardians Section[RoleMetric]  `json:"guardians"`
-	Classes   Section[CountMetric] `json:"classes"`
-	Sections  Section[CountMetric] `json:"sections"`
+	Students  Section[RoleMetric]    `json:"students"`
+	Teachers  Section[RoleMetric]    `json:"teachers"`
+	Guardians Section[RoleMetric]    `json:"guardians"`
+	Classes   Section[ClassMetric]   `json:"classes"`
+	Sections  Section[SectionMetric] `json:"sections"`
 }
 
 // AcademicOverview holds academic-structure sections.

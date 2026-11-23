@@ -57,6 +57,7 @@ type DashboardRepo struct {
 	Students *StudentRepo      // optional
 	Teachers *TeacherRepo      // optional
 	Years    *AcademicYearRepo // optional
+	Classes  *ClassStore       // optional
 }
 
 var _ repository.DashboardRepository = (*DashboardRepo)(nil)
@@ -144,6 +145,21 @@ func (r *DashboardRepo) AdminSnapshot(_ context.Context, q repository.DashboardQ
 	r.teacherSnapshot(q, snap)
 	if r.Years != nil {
 		snap.CurrentAcademicYear = r.Years.Current()
+	}
+	if r.Classes != nil {
+		stats, _ := r.Classes.Classes().Stats(context.Background())
+		snap.Classes = models.ClassMetric{Total: stats.Total, Active: stats.Active, Inactive: stats.Inactive}
+		if stats.CurrentYear != nil {
+			snap.Sections.AcademicYear = stats.CurrentYear
+			sections, _, _ := r.Classes.Sections().List(context.Background(), repository.SectionFilter{
+				AcademicYearID: &stats.CurrentYear.ID, Page: 1, PageSize: 1 << 20})
+			for _, sec := range sections {
+				snap.Sections.Total++
+				if sec.Status == models.StatusActive {
+					snap.Sections.Active++
+				}
+			}
+		}
 	}
 	return snap, nil
 }

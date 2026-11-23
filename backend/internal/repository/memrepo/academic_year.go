@@ -20,6 +20,9 @@ type AcademicYearRepo struct {
 	mu    sync.Mutex
 	years map[uuid.UUID]*models.AcademicYear
 	InUse map[uuid.UUID]bool
+	// HasSections, when set, reports whether sections reference a year
+	// (emulating the sections.academic_year_id foreign key).
+	HasSections func(id uuid.UUID) bool
 }
 
 var _ repository.AcademicYearRepository = (*AcademicYearRepo)(nil)
@@ -218,6 +221,9 @@ func (r *AcademicYearRepo) Complete(_ context.Context, id, actorID uuid.UUID, ch
 }
 
 func (r *AcademicYearRepo) Delete(_ context.Context, id uuid.UUID, check func(y *models.AcademicYear) error) (*models.AcademicYear, error) {
+	// Asked before taking r.mu: the section store calls into this repo while
+	// holding its own lock, so the opposite order could deadlock.
+	referenced := r.HasSections != nil && r.HasSections(id)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	y, ok := r.years[id]
@@ -227,7 +233,7 @@ func (r *AcademicYearRepo) Delete(_ context.Context, id uuid.UUID, check func(y 
 	if err := check(copyYear(y)); err != nil {
 		return nil, err
 	}
-	if r.InUse[id] {
+	if r.InUse[id] || referenced {
 		return nil, repository.ErrAcademicYearInUse
 	}
 	delete(r.years, id)

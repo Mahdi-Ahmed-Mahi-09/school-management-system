@@ -21,7 +21,8 @@ const (
 var implementedModules = map[string]bool{
 	models.ModuleUsers.Key:         true,
 	models.ModuleAcademicYears.Key: true, // Feature 05
-	models.ModuleAcademic.Key:      false,
+	models.ModuleAcademic.Key:      true, // Feature 06
+	models.ModuleEnrollment.Key:    false,
 	models.ModuleStudents.Key:      true, // Feature 03
 	models.ModuleTeachers.Key:      true, // Feature 04
 	models.ModuleAttendance.Key:    false,
@@ -35,6 +36,7 @@ var dashboardModules = []models.ModuleInfo{
 	models.ModuleAcademicYears,
 	models.ModuleAcademic,
 	models.ModuleStudents,
+	models.ModuleEnrollment,
 	models.ModuleTeachers,
 	models.ModuleAttendance,
 	models.ModuleFees,
@@ -100,8 +102,10 @@ func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDas
 			// Teachers are counted from teacher records (Feature 04), not login accounts.
 			Teachers:  models.Available(snap.Teachers),
 			Guardians: roleSection(models.RoleGuardian),
-			Classes:   models.Unavailable[models.CountMetric](models.ModuleAcademic),
-			Sections:  models.Unavailable[models.CountMetric](models.ModuleAcademic),
+			// Classes and sections come from Feature 06; sections are those
+			// of the current academic year (zero when no year is current).
+			Classes:  models.Available(snap.Classes),
+			Sections: models.Available(snap.Sections),
 		},
 		Accounts:      models.Available(snap.Accounts),
 		AccountGrowth: models.Available(snap.AccountGrowth),
@@ -113,8 +117,8 @@ func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDas
 				NewThisMonth:  snap.Students.NewThisMonth,
 				Monthly:       snap.AdmissionsByMonth,
 			}),
-			// Placing students in classes needs the academic module.
-			ClassDistribution: models.Unavailable[[]models.ClassDistributionItem](models.ModuleAcademic),
+			// Students per class needs students placed into sections (enrollment).
+			ClassDistribution: models.Unavailable[[]models.ClassDistributionItem](models.ModuleEnrollment),
 		},
 		Attendance:       models.Unavailable[models.AttendanceSummary](models.ModuleAttendance),
 		Fees:             models.Unavailable[models.FeeSummary](models.ModuleFees),

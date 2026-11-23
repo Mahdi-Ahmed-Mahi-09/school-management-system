@@ -30,6 +30,8 @@ type Deps struct {
 	StudentService      *service.StudentService
 	TeacherService      *service.TeacherService
 	AcademicYearService *service.AcademicYearService
+	ClassService        *service.ClassService
+	SectionService      *service.SectionService
 	Cookie              handler.CookieConfig
 	AllowedOrigins      []string
 	LoginRateLimit      int
@@ -65,6 +67,7 @@ func New(d Deps) *gin.Engine {
 	studentH := handler.NewStudentHandler(d.StudentService)
 	teacherH := handler.NewTeacherHandler(d.TeacherService)
 	yearH := handler.NewAcademicYearHandler(d.AcademicYearService)
+	classH := handler.NewClassHandler(d.ClassService, d.SectionService)
 	loginLimiter := middleware.NewRateLimiter(d.LoginRateLimit, d.LoginRateWindow)
 
 	api := r.Group("/api/v1", middleware.CSRFGuard())
@@ -146,6 +149,27 @@ func New(d Deps) *gin.Engine {
 	years.PATCH("/:id/activate", middleware.RequirePermission(models.PermAcademicYearsManageStatus), yearH.Activate)
 	years.PATCH("/:id/complete", middleware.RequirePermission(models.PermAcademicYearsManageStatus), yearH.Complete)
 	years.DELETE("/:id", middleware.RequirePermission(models.PermAcademicYearsDelete), yearH.Delete)
+
+	// Classes and sections: admin role AND the specific permission are both
+	// required. Status changes and ordering use the update permission.
+	classes := protected.Group("/classes", middleware.RequireRoles(models.RoleAdmin))
+	classes.GET("", middleware.RequirePermission(models.PermClassesRead), classH.ListClasses)
+	classes.GET("/stats", middleware.RequirePermission(models.PermClassesRead), classH.ClassStats)
+	classes.GET("/:id", middleware.RequirePermission(models.PermClassesRead), classH.GetClass)
+	classes.GET("/:id/sections", middleware.RequirePermission(models.PermSectionsRead), classH.ClassSections)
+	classes.POST("", middleware.RequirePermission(models.PermClassesCreate), classH.CreateClass)
+	classes.PUT("/order", middleware.RequirePermission(models.PermClassesUpdate), classH.ReorderClasses)
+	classes.PUT("/:id", middleware.RequirePermission(models.PermClassesUpdate), classH.UpdateClass)
+	classes.PATCH("/:id/status", middleware.RequirePermission(models.PermClassesUpdate), classH.SetClassStatus)
+	classes.DELETE("/:id", middleware.RequirePermission(models.PermClassesDelete), classH.DeleteClass)
+
+	sections := protected.Group("/sections", middleware.RequireRoles(models.RoleAdmin))
+	sections.GET("", middleware.RequirePermission(models.PermSectionsRead), classH.ListSections)
+	sections.GET("/:id", middleware.RequirePermission(models.PermSectionsRead), classH.GetSection)
+	sections.POST("", middleware.RequirePermission(models.PermSectionsCreate), classH.CreateSection)
+	sections.PUT("/:id", middleware.RequirePermission(models.PermSectionsUpdate), classH.UpdateSection)
+	sections.PATCH("/:id/status", middleware.RequirePermission(models.PermSectionsUpdate), classH.SetSectionStatus)
+	sections.DELETE("/:id", middleware.RequirePermission(models.PermSectionsDelete), classH.DeleteSection)
 
 	return r
 }

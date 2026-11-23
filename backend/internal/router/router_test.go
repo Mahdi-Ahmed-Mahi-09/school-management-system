@@ -26,6 +26,7 @@ type testServer struct {
 	engine *gin.Engine
 	users  *memrepo.UserRepo
 	years  *memrepo.AcademicYearRepo
+	store  *memrepo.ClassStore
 	tm     *auth.TokenManager
 }
 
@@ -40,16 +41,19 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 	studentRepo := memrepo.NewStudentRepo()
 	teacherRepo := memrepo.NewTeacherRepo(users)
 	yearRepo := memrepo.NewAcademicYearRepo()
-	dashboardSvc := service.NewDashboardService(&memrepo.DashboardRepo{Users: users, Activity: activity, Students: studentRepo, Teachers: teacherRepo, Years: yearRepo}, time.UTC)
+	classStore := memrepo.NewClassStore(yearRepo)
+	dashboardSvc := service.NewDashboardService(&memrepo.DashboardRepo{Users: users, Activity: activity, Students: studentRepo, Teachers: teacherRepo, Years: yearRepo, Classes: classStore}, time.UTC)
 	teacherSvc := service.NewTeacherService(teacherRepo, activity, time.UTC, "BDT")
 	studentSvc := service.NewStudentService(studentRepo, activity, time.UTC)
-	s := &testServer{t: t, users: users, years: yearRepo, tm: tm, engine: New(Deps{
+	s := &testServer{t: t, users: users, years: yearRepo, store: classStore, tm: tm, engine: New(Deps{
 		AuthService:         authSvc,
 		UserService:         userSvc,
 		DashboardService:    dashboardSvc,
 		StudentService:      studentSvc,
 		TeacherService:      teacherSvc,
 		AcademicYearService: service.NewAcademicYearService(yearRepo, activity, time.UTC),
+		ClassService:        service.NewClassService(classStore.Classes(), activity),
+		SectionService:      service.NewSectionService(classStore.Sections(), classStore.Classes(), activity),
 		Cookie:              handler.CookieConfig{Name: cookieName},
 		AllowedOrigins:      []string{"http://localhost:5173"},
 		LoginRateLimit:      loginLimit,
@@ -440,9 +444,10 @@ func TestAdminDashboardAuthorization(t *testing.T) {
 	if students["status"] != "available" || students["data"].(map[string]any)["total"] != float64(0) {
 		t.Errorf("students section: %v", students)
 	}
+	// Classes exist since Feature 06: a real, confirmed zero.
 	classes := overview["classes"].(map[string]any)
-	if classes["status"] != "unavailable" || classes["data"] != nil || classes["module"] == nil {
-		t.Errorf("classes section must be unavailable: %v", classes)
+	if classes["status"] != "available" || classes["data"].(map[string]any)["total"] != float64(0) {
+		t.Errorf("classes section: %v", classes)
 	}
 	attendance := data["attendance"].(map[string]any)
 	if attendance["status"] != "unavailable" || attendance["data"] != nil {

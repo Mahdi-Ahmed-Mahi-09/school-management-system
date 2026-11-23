@@ -73,6 +73,33 @@ export const academicYearsApi = {
   remove: (id) => api.delete(`/academic-years/${id}`).then(unwrap),
 }
 
+export const classesApi = {
+  /** Resolves to `{ classes, meta }`. */
+  list: (params, { signal } = {}) =>
+    api.get('/classes', { params, signal }).then((res) => ({ classes: res.data.data, meta: res.data.meta })),
+  stats: () => api.get('/classes/stats').then(unwrap),
+  get: (id) => api.get(`/classes/${id}`).then(unwrap),
+  /** Every section of the class, newest academic year first (optionally one year). */
+  sections: (id, params) => api.get(`/classes/${id}/sections`, { params }).then(unwrap),
+  create: (payload) => api.post('/classes', payload).then(unwrap),
+  update: (id, payload) => api.put(`/classes/${id}`, payload).then(unwrap),
+  setStatus: (id, status) => api.patch(`/classes/${id}/status`, { status }).then(unwrap),
+  /** class_ids: every class id, in the new order. */
+  reorder: (classIds) => api.put('/classes/order', { class_ids: classIds }).then(unwrap),
+  remove: (id) => api.delete(`/classes/${id}`).then(unwrap),
+}
+
+export const sectionsApi = {
+  /** Resolves to `{ sections, meta }`. */
+  list: (params, { signal } = {}) =>
+    api.get('/sections', { params, signal }).then((res) => ({ sections: res.data.data, meta: res.data.meta })),
+  get: (id) => api.get(`/sections/${id}`).then(unwrap),
+  create: (payload) => api.post('/sections', payload).then(unwrap),
+  update: (id, payload) => api.put(`/sections/${id}`, payload).then(unwrap),
+  setStatus: (id, status) => api.patch(`/sections/${id}/status`, { status }).then(unwrap),
+  remove: (id) => api.delete(`/sections/${id}`).then(unwrap),
+}
+
 export const usersApi = {
   /** Resolves to `{ users, meta }`. */
   list: (params, { signal } = {}) =>

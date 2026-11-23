@@ -68,6 +68,14 @@ export const PERMISSIONS = {
   ACADEMIC_YEARS_UPDATE: 'academic_years:update',
   ACADEMIC_YEARS_DELETE: 'academic_years:delete',
   ACADEMIC_YEARS_MANAGE_STATUS: 'academic_years:manage_status',
+  CLASSES_READ: 'classes:read',
+  CLASSES_CREATE: 'classes:create',
+  CLASSES_UPDATE: 'classes:update',
+  CLASSES_DELETE: 'classes:delete',
+  SECTIONS_READ: 'sections:read',
+  SECTIONS_CREATE: 'sections:create',
+  SECTIONS_UPDATE: 'sections:update',
+  SECTIONS_DELETE: 'sections:delete',
 }
 
 export const PERMISSION_LABELS = {
@@ -95,4 +103,12 @@ export const PERMISSION_LABELS = {
   'academic_years:update': 'Edit academic years',
   'academic_years:delete': 'Delete unused academic years',
   'academic_years:manage_status': 'Set the current academic year and complete years',
+  'classes:read': 'View classes',
+  'classes:create': 'Add classes',
+  'classes:update': 'Edit, reorder, activate and deactivate classes',
+  'classes:delete': 'Delete classes without sections',
+  'sections:read': 'View sections',
+  'sections:create': 'Add sections',
+  'sections:update': 'Edit, activate and deactivate sections',
+  'sections:delete': 'Delete unused sections',
 }

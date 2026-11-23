@@ -12,6 +12,10 @@ import { ForbiddenPage, NotFoundPage } from './pages/StatusPages'
 // Admin modules are loaded on demand so other roles never download them.
 const AcademicYearDetailPage = lazy(() => import('./pages/academic-years/AcademicYearDetailPage'))
 const AcademicYearsPage = lazy(() => import('./pages/academic-years/AcademicYearsPage'))
+const ClassDetailPage = lazy(() => import('./pages/classes/ClassDetailPage'))
+const ClassesPage = lazy(() => import('./pages/classes/ClassesPage'))
+const SectionDetailPage = lazy(() => import('./pages/classes/SectionDetailPage'))
+const SectionsPage = lazy(() => import('./pages/classes/SectionsPage'))
 const UserDetailPage = lazy(() => import('./pages/admin/UserDetailPage'))
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'))
 const StudentFormPage = lazy(() => import('./pages/students/StudentFormPage'))
@@ -45,6 +49,14 @@ export default function App() {
                 <Route element={<RequireAccess permission={PERMISSIONS.ACADEMIC_YEARS_READ} roles={['admin']} />}>
                   <Route path="academic-years" element={<AcademicYearsPage />} />
                   <Route path="academic-years/:id" element={<AcademicYearDetailPage />} />
+                </Route>
+                <Route element={<RequireAccess permission={PERMISSIONS.CLASSES_READ} roles={['admin']} />}>
+                  <Route path="classes" element={<ClassesPage />} />
+                  <Route path="classes/:id" element={<ClassDetailPage />} />
+                </Route>
+                <Route element={<RequireAccess permission={PERMISSIONS.SECTIONS_READ} roles={['admin']} />}>
+                  <Route path="sections" element={<SectionsPage />} />
+                  <Route path="sections/:id" element={<SectionDetailPage />} />
                 </Route>
                 <Route element={<RequireAccess permission={PERMISSIONS.STUDENTS_READ} roles={['admin']} />}>
                   <Route path="students" element={<StudentsPage />} />

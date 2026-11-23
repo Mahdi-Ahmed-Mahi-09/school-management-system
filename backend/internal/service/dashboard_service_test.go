@@ -98,8 +98,6 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 		module  *models.ModuleInfo
 		hasData bool
 	}{
-		"classes":            {d.Overview.Classes.Status, d.Overview.Classes.Module, d.Overview.Classes.Data != nil},
-		"sections":           {d.Overview.Sections.Status, d.Overview.Sections.Module, d.Overview.Sections.Data != nil},
 		"class_distribution": {d.Academic.ClassDistribution.Status, d.Academic.ClassDistribution.Module, d.Academic.ClassDistribution.Data != nil},
 		"attendance":         {d.Attendance.Status, d.Attendance.Module, d.Attendance.Data != nil},
 		"fees":               {d.Fees.Status, d.Fees.Module, d.Fees.Data != nil},
@@ -120,12 +118,21 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 	if d.Academic.Enrollment.Status != models.SectionAvailable || d.RecentAdmissions.Status != models.SectionAvailable {
 		t.Error("enrollment and recent admissions should be available now that students exist")
 	}
-	if m := d.Academic.ClassDistribution.Module; m == nil || m.Key != models.ModuleAcademic.Key {
-		t.Errorf("class distribution should wait for the academic module: %+v", m)
+	// Students per class needs enrollment, which doesn't exist yet.
+	if m := d.Academic.ClassDistribution.Module; m == nil || m.Key != models.ModuleEnrollment.Key {
+		t.Errorf("class distribution should wait for the enrollment module: %+v", m)
+	}
+	// Classes and sections are real since Feature 06 (zero here, no current year).
+	if c := d.Overview.Classes; c.Status != models.SectionAvailable || c.Data.Total != 0 {
+		t.Errorf("classes = %+v", c)
+	}
+	if sec := d.Overview.Sections; sec.Status != models.SectionAvailable || sec.Data.Total != 0 || sec.Data.AcademicYear != nil {
+		t.Errorf("sections = %+v", sec)
 	}
 
 	wantAvailable := map[string]bool{
-		models.ModuleUsers.Key: true, models.ModuleAcademicYears.Key: true, models.ModuleStudents.Key: true, models.ModuleTeachers.Key: true,
+		models.ModuleUsers.Key: true, models.ModuleAcademicYears.Key: true, models.ModuleAcademic.Key: true,
+		models.ModuleStudents.Key: true, models.ModuleTeachers.Key: true,
 	}
 	for _, m := range d.Modules {
 		if m.Available != wantAvailable[m.Key] {

@@ -133,6 +133,9 @@ func (r *PostgresDashboardRepository) AdminSnapshot(ctx context.Context, q Dashb
 		case !errors.Is(err, ErrNotFound):
 			return err
 		}
+		if err := classSnapshot(ctx, tx, snap); err != nil {
+			return err
+		}
 
 		// 3. Recent activity with the actor's current name (one join, no N+1).
 		rows, err = tx.Query(ctx, `
@@ -264,4 +267,21 @@ func teacherSnapshot(ctx context.Context, tx pgx.Tx, q DashboardQuery, snap *Das
 		       count(*) FILTER (WHERE joining_date >= $1 AND joining_date < $2)
 		FROM teachers`, current, current.AddDate(0, 1, 0)).
 		Scan(&snap.Teachers.Total, &snap.Teachers.Active, &snap.Teachers.Inactive, &snap.Teachers.NewThisMonth)
+}
+
+// classSnapshot counts classes, and the sections of the current academic year.
+func classSnapshot(ctx context.Context, tx pgx.Tx, snap *DashboardSnapshot) error {
+	if err := tx.QueryRow(ctx, `
+		SELECT count(*), count(*) FILTER (WHERE status = 'active'), count(*) FILTER (WHERE status = 'inactive')
+		FROM classes`).Scan(&snap.Classes.Total, &snap.Classes.Active, &snap.Classes.Inactive); err != nil {
+		return err
+	}
+	year, err := currentYearRef(ctx, tx)
+	if err != nil || year == nil {
+		return err
+	}
+	snap.Sections.AcademicYear = year
+	return tx.QueryRow(ctx, `
+		SELECT count(*), count(*) FILTER (WHERE status = 'active') FROM sections WHERE academic_year_id = $1`, year.ID).
+		Scan(&snap.Sections.Total, &snap.Sections.Active)
 }
