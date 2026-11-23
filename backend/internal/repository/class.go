@@ -24,14 +24,16 @@ var (
 	ErrClassOrderMismatch = errors.New("class order does not match the current classes")
 )
 
-// ClassInUseError reports that a class cannot be deleted. Sections is the
-// number of sections it has; zero means other records reference it.
+// ClassInUseError reports that a class cannot be deleted. Sections and
+// SubjectAssignments count what it has; both zero means other records
+// reference it.
 type ClassInUseError struct {
-	Sections int
+	Sections           int
+	SubjectAssignments int
 }
 
 func (e *ClassInUseError) Error() string {
-	return fmt.Sprintf("class is in use (%d sections)", e.Sections)
+	return fmt.Sprintf("class is in use (%d sections, %d subject assignments)", e.Sections, e.SubjectAssignments)
 }
 
 // Sortable columns for class listings.
@@ -64,8 +66,8 @@ type ClassRepository interface {
 	// Reorder sets display_order to 1..n following ids, which must list every
 	// class exactly once (otherwise ErrClassOrderMismatch).
 	Reorder(ctx context.Context, ids []uuid.UUID, actorID uuid.UUID) error
-	// Delete removes a class, returning *ClassInUseError if it has sections or
-	// is referenced elsewhere.
+	// Delete removes a class, returning *ClassInUseError if it has sections,
+	// subject assignments or is referenced elsewhere.
 	Delete(ctx context.Context, id uuid.UUID) (*models.Class, error)
 }
 

@@ -132,7 +132,7 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 
 	wantAvailable := map[string]bool{
 		models.ModuleUsers.Key: true, models.ModuleAcademicYears.Key: true, models.ModuleAcademic.Key: true,
-		models.ModuleStudents.Key: true, models.ModuleTeachers.Key: true,
+		models.ModuleSubjects.Key: true, models.ModuleStudents.Key: true, models.ModuleTeachers.Key: true,
 	}
 	for _, m := range d.Modules {
 		if m.Available != wantAvailable[m.Key] {

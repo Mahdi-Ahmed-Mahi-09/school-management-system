@@ -32,6 +32,8 @@ type Deps struct {
 	AcademicYearService *service.AcademicYearService
 	ClassService        *service.ClassService
 	SectionService      *service.SectionService
+	SubjectService      *service.SubjectService
+	ClassSubjectService *service.ClassSubjectService
 	Cookie              handler.CookieConfig
 	AllowedOrigins      []string
 	LoginRateLimit      int
@@ -68,6 +70,7 @@ func New(d Deps) *gin.Engine {
 	teacherH := handler.NewTeacherHandler(d.TeacherService)
 	yearH := handler.NewAcademicYearHandler(d.AcademicYearService)
 	classH := handler.NewClassHandler(d.ClassService, d.SectionService)
+	subjectH := handler.NewSubjectHandler(d.SubjectService, d.ClassSubjectService)
 	loginLimiter := middleware.NewRateLimiter(d.LoginRateLimit, d.LoginRateWindow)
 
 	api := r.Group("/api/v1", middleware.CSRFGuard())
@@ -157,6 +160,7 @@ func New(d Deps) *gin.Engine {
 	classes.GET("/stats", middleware.RequirePermission(models.PermClassesRead), classH.ClassStats)
 	classes.GET("/:id", middleware.RequirePermission(models.PermClassesRead), classH.GetClass)
 	classes.GET("/:id/sections", middleware.RequirePermission(models.PermSectionsRead), classH.ClassSections)
+	classes.GET("/:id/subjects", middleware.RequirePermission(models.PermSubjectsRead), subjectH.ClassSubjects)
 	classes.POST("", middleware.RequirePermission(models.PermClassesCreate), classH.CreateClass)
 	classes.PUT("/order", middleware.RequirePermission(models.PermClassesUpdate), classH.ReorderClasses)
 	classes.PUT("/:id", middleware.RequirePermission(models.PermClassesUpdate), classH.UpdateClass)
@@ -170,6 +174,26 @@ func New(d Deps) *gin.Engine {
 	sections.PUT("/:id", middleware.RequirePermission(models.PermSectionsUpdate), classH.UpdateSection)
 	sections.PATCH("/:id/status", middleware.RequirePermission(models.PermSectionsUpdate), classH.SetSectionStatus)
 	sections.DELETE("/:id", middleware.RequirePermission(models.PermSectionsDelete), classH.DeleteSection)
+
+	// Subjects and class-subject assignments: admin role AND the specific
+	// permission are both required. Status changes use the update permission;
+	// adding, editing and removing assignments use subjects:assign.
+	subjects := protected.Group("/subjects", middleware.RequireRoles(models.RoleAdmin))
+	subjects.GET("", middleware.RequirePermission(models.PermSubjectsRead), subjectH.ListSubjects)
+	subjects.GET("/stats", middleware.RequirePermission(models.PermSubjectsRead), subjectH.SubjectStats)
+	subjects.GET("/:id", middleware.RequirePermission(models.PermSubjectsRead), subjectH.GetSubject)
+	subjects.GET("/:id/classes", middleware.RequirePermission(models.PermSubjectsRead), subjectH.SubjectClasses)
+	subjects.POST("", middleware.RequirePermission(models.PermSubjectsCreate), subjectH.CreateSubject)
+	subjects.PUT("/:id", middleware.RequirePermission(models.PermSubjectsUpdate), subjectH.UpdateSubject)
+	subjects.PATCH("/:id/status", middleware.RequirePermission(models.PermSubjectsUpdate), subjectH.SetSubjectStatus)
+	subjects.DELETE("/:id", middleware.RequirePermission(models.PermSubjectsDelete), subjectH.DeleteSubject)
+
+	classSubjects := protected.Group("/class-subjects", middleware.RequireRoles(models.RoleAdmin))
+	classSubjects.GET("", middleware.RequirePermission(models.PermSubjectsRead), subjectH.ListAssignments)
+	classSubjects.GET("/:id", middleware.RequirePermission(models.PermSubjectsRead), subjectH.GetAssignment)
+	classSubjects.POST("", middleware.RequirePermission(models.PermSubjectsAssign), subjectH.AssignSubjects)
+	classSubjects.PUT("/:id", middleware.RequirePermission(models.PermSubjectsAssign), subjectH.UpdateAssignment)
+	classSubjects.DELETE("/:id", middleware.RequirePermission(models.PermSubjectsAssign), subjectH.DeleteAssignment)
 
 	return r
 }

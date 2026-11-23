@@ -86,9 +86,13 @@ func mapClassRepoError(err error) error {
 			map[string]string{"code": "Another class already uses this code."})
 	case errors.As(err, &inUse):
 		msg := "This class is used by other records, so it can't be deleted."
-		if inUse.Sections > 0 {
+		switch {
+		case inUse.Sections > 0:
 			msg = fmt.Sprintf("This class has %d section%s. Delete them first, or deactivate the class instead.",
 				inUse.Sections, plural(inUse.Sections))
+		case inUse.SubjectAssignments > 0:
+			msg = fmt.Sprintf("This class has %d subject assignment%s. Remove them first, or deactivate the class instead.",
+				inUse.SubjectAssignments, plural(inUse.SubjectAssignments))
 		}
 		return apperror.Conflict("CLASS_IN_USE", msg, nil)
 	case errors.Is(err, repository.ErrClassOrderMismatch):
@@ -317,7 +321,7 @@ func (s *ClassService) Reorder(ctx context.Context, actor *models.User, rawIDs [
 	return nil
 }
 
-// Delete removes a class with no sections and no other references.
+// Delete removes a class with no sections, subject assignments or other references.
 func (s *ClassService) Delete(ctx context.Context, actor *models.User, id uuid.UUID) (*models.Class, error) {
 	deleted, err := s.classes.Delete(ctx, id)
 	if err != nil {

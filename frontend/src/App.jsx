@@ -16,6 +16,9 @@ const ClassDetailPage = lazy(() => import('./pages/classes/ClassDetailPage'))
 const ClassesPage = lazy(() => import('./pages/classes/ClassesPage'))
 const SectionDetailPage = lazy(() => import('./pages/classes/SectionDetailPage'))
 const SectionsPage = lazy(() => import('./pages/classes/SectionsPage'))
+const ClassSubjectsPage = lazy(() => import('./pages/subjects/ClassSubjectsPage'))
+const SubjectDetailPage = lazy(() => import('./pages/subjects/SubjectDetailPage'))
+const SubjectsPage = lazy(() => import('./pages/subjects/SubjectsPage'))
 const UserDetailPage = lazy(() => import('./pages/admin/UserDetailPage'))
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'))
 const StudentFormPage = lazy(() => import('./pages/students/StudentFormPage'))
@@ -57,6 +60,11 @@ export default function App() {
                 <Route element={<RequireAccess permission={PERMISSIONS.SECTIONS_READ} roles={['admin']} />}>
                   <Route path="sections" element={<SectionsPage />} />
                   <Route path="sections/:id" element={<SectionDetailPage />} />
+                </Route>
+                <Route element={<RequireAccess permission={PERMISSIONS.SUBJECTS_READ} roles={['admin']} />}>
+                  <Route path="subjects" element={<SubjectsPage />} />
+                  <Route path="subjects/:id" element={<SubjectDetailPage />} />
+                  <Route path="class-subjects" element={<ClassSubjectsPage />} />
                 </Route>
                 <Route element={<RequireAccess permission={PERMISSIONS.STUDENTS_READ} roles={['admin']} />}>
                   <Route path="students" element={<StudentsPage />} />

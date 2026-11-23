@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Info, LayoutGrid, PencilLine, Plus, Power, PowerOff, Rows3, SearchX, Trash2 } from 'lucide-react'
+import { BookOpen, BookPlus, Info, LayoutGrid, PencilLine, Plus, Power, PowerOff, Rows3, SearchX, Trash2 } from 'lucide-react'
 import { getErrorMessage } from '../../api/client'
 import { classesApi } from '../../api/services'
 import { CurrentYearPill } from '../../components/academic-years/CurrentYearPill'
@@ -8,6 +8,8 @@ import { YearStatusBadge } from '../../components/academic-years/YearStatusBadge
 import { ClassFormModal } from '../../components/classes/ClassFormModal'
 import { SectionFormModal } from '../../components/classes/SectionFormModal'
 import { useClassActions } from '../../components/classes/useClassActions'
+import { AssignSubjectsModal } from '../../components/subjects/AssignSubjectsModal'
+import { AssignmentTypeBadge } from '../../components/subjects/SubjectTypeBadge'
 import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
 import { Button } from '../../components/ui/Button'
 import { buttonClasses } from '../../components/ui/buttonStyles'
@@ -15,6 +17,7 @@ import { Alert, Card, EmptyState, ErrorState, Skeleton, StatusBadge } from '../.
 import { DetailItem, DetailSection } from '../../components/ui/Sections'
 import { useAuth } from '../../hooks/useAuth'
 import { PERMISSIONS } from '../../lib/roles'
+import { groupAssignmentsByYear } from '../../lib/subjects'
 import { formatDateTime } from '../../lib/utils'
 
 /** Groups sections (already ordered newest year first) by academic year. */
@@ -45,19 +48,25 @@ export default function ClassDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { can } = useAuth()
-  const [state, setState] = useState({ loading: true, error: null, notFound: false, cls: null, sections: [] })
+  const canReadSubjects = can(PERMISSIONS.SUBJECTS_READ)
+  const [state, setState] = useState({ loading: true, error: null, notFound: false, cls: null, sections: [], subjects: [] })
   const [editing, setEditing] = useState(false)
   const [addingSection, setAddingSection] = useState(false)
+  const [assigning, setAssigning] = useState(false)
 
   const load = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }))
     try {
-      const [cls, sections] = await Promise.all([classesApi.get(id), classesApi.sections(id)])
-      setState({ loading: false, error: null, notFound: false, cls, sections })
+      const [cls, sections, subjects] = await Promise.all([
+        classesApi.get(id),
+        classesApi.sections(id),
+        canReadSubjects ? classesApi.subjects(id) : Promise.resolve([]),
+      ])
+      setState({ loading: false, error: null, notFound: false, cls, sections, subjects })
     } catch (err) {
-      setState({ loading: false, error: getErrorMessage(err), notFound: err?.response?.status === 404, cls: null, sections: [] })
+      setState({ loading: false, error: getErrorMessage(err), notFound: err?.response?.status === 404, cls: null, sections: [], subjects: [] })
     }
-  }, [id])
+  }, [id, canReadSubjects])
 
   useEffect(() => {
     load()
@@ -94,6 +103,8 @@ export default function ClassDetailPage() {
   const groups = groupByYear(state.sections)
   const active = c.status === 'active'
   const canAddSection = can(PERMISSIONS.SECTIONS_CREATE)
+  const subjectGroups = groupAssignmentsByYear(state.subjects)
+  const inUse = c.section_count > 0 || state.subjects.length > 0
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -129,8 +140,8 @@ export default function ClassDetailPage() {
                 variant="secondary"
                 icon={Trash2}
                 className="text-rose-600 hover:text-rose-700"
-                disabled={c.section_count > 0}
-                title={c.section_count > 0 ? 'Delete its sections first' : undefined}
+                disabled={inUse}
+                title={c.section_count > 0 ? 'Delete its sections first' : state.subjects.length > 0 ? 'Remove its subject assignments first' : undefined}
                 onClick={() => actions.remove(c)}
               >
                 Delete
@@ -212,8 +223,62 @@ export default function ClassDetailPage() {
         </Card>
       </div>
 
+      {canReadSubjects && (
+        <Card>
+          <div className="flex flex-wrap items-center gap-2.5 border-b border-slate-100 px-5 py-3.5 sm:px-6">
+            <BookOpen className="size-4 text-slate-400" aria-hidden="true" />
+            <h2 className="flex-1 text-sm font-semibold text-slate-900">Subjects by academic year</h2>
+            {can(PERMISSIONS.SUBJECTS_ASSIGN) && (
+              <Button size="sm" icon={BookPlus} disabled={!active} title={active ? undefined : 'Activate the class first'} onClick={() => setAssigning(true)}>
+                Assign subjects
+              </Button>
+            )}
+          </div>
+          {subjectGroups.length === 0 ? (
+            <EmptyState icon={BookOpen} title="No subjects assigned yet" description="Choose the subjects this class takes in each academic year, as compulsory or optional." />
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {subjectGroups.map(({ year, items }) => (
+                <section key={year.id} className="px-5 py-4 sm:px-6" aria-label={`Subjects in ${year.name}`}>
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <Link to={`/academic-years/${year.id}`} className="text-sm font-semibold text-slate-900 hover:text-brand-700">
+                      {year.name}
+                    </Link>
+                    <YearStatusBadge status={year.status} />
+                    {year.is_current && <CurrentYearPill />}
+                    <span className="ml-auto text-xs text-slate-500">
+                      {items.filter((a) => a.is_compulsory).length} compulsory · {items.filter((a) => !a.is_compulsory).length} optional ·{' '}
+                      <Link to={`/class-subjects?year=${year.id}&class=${c.id}`} className="font-medium text-brand-700 hover:underline">
+                        Manage
+                      </Link>
+                    </span>
+                  </div>
+                  <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                    {items.map((a) => (
+                      <li key={a.id}>
+                        <Link
+                          to={`/subjects/${a.subject.id}`}
+                          className="flex items-center gap-3 rounded-lg border border-slate-200/80 px-3 py-2.5 transition hover:border-brand-200 hover:bg-brand-50/40"
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-slate-900">{a.subject.name}</span>
+                            <span className="block truncate font-mono text-xs text-slate-500">{a.subject.code}</span>
+                          </span>
+                          <AssignmentTypeBadge compulsory={a.is_compulsory} />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
       <ClassFormModal open={editing} classItem={c} onClose={() => setEditing(false)} onSaved={load} />
       <SectionFormModal open={addingSection} defaults={{ class_id: c.id }} onClose={() => setAddingSection(false)} onSaved={load} />
+      <AssignSubjectsModal open={assigning} defaults={{ class_id: c.id }} onClose={() => setAssigning(false)} onSaved={load} />
       {actions.dialog}
     </div>
   )

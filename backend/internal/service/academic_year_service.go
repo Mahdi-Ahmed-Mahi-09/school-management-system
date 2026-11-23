@@ -117,7 +117,7 @@ func mapAcademicYearRepoError(err error) error {
 			map[string]string{"name": "An academic year with this name already exists."})
 	case errors.Is(err, repository.ErrAcademicYearInUse):
 		return apperror.Conflict("ACADEMIC_YEAR_IN_USE",
-			"This academic year is used by other records (such as classes or enrollments), so it can't be deleted.", nil)
+			"This academic year is used by other records (such as sections or subject assignments), so it can't be deleted.", nil)
 	case errors.Is(err, repository.ErrAnotherYearCurrent):
 		return apperror.Conflict("ACADEMIC_YEAR_CURRENT_CHANGED",
 			"Another academic year was made current at the same time. Refresh and try again.", nil)

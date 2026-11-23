@@ -133,6 +133,27 @@ Admin-only classes and sections. A **class** is a reusable level (Play, KG, Clas
 - **Dashboard:** the Total classes and Total sections KPIs are real. Sections are counted for the current academic year. "Students per class" stays unavailable until Student Enrollment exists.
 - **Not included yet:** teacher assignment, student enrollment and student counts. Future modules will reference `classes.id` / `sections.id`.
 
+### Feature 07 — Subject Management
+
+Admin-only subject catalogue and class-subject assignments. A **subject** (Bangla, Mathematics, ICT …) is created once; it is **assigned to a class for one academic year**, as compulsory or optional for that class. Class 6 can take Bangla, English and Mathematics in 2026–2027, while Class 9 takes Physics, Chemistry and Biology.
+
+- **Pages:**
+  - Subjects (`/subjects`): real totals (subjects, active, inactive, class assignments), search (name, code, description), type and status filters, sorting, pagination. Row actions: view, edit, assign to class, activate/deactivate, and delete (only offered when the subject has no assignments).
+  - Subject details (`/subjects/:id`): subject information, marks and the classes it is assigned to, grouped by academic year.
+  - Class subjects (`/class-subjects`): always scoped to one academic year (defaulting to the current year), with class, subject, type and search filters. Admins assign several subjects at once, switch an assignment between compulsory and optional, and remove assignments.
+  - Class details (`/classes/:id`) also lists the class's subjects by academic year.
+- **Data:**
+  - Subject: name (unique, case-insensitive), code (required, unique), description, type (compulsory/optional, the default for new assignments), optional full marks (1–1000) and pass marks (0 up to the full marks), status.
+  - Class subject (`class_subjects`): class, subject, academic year, compulsory flag. Unique per class, academic year and subject.
+- **Rules (enforced by the API and the database):**
+  - Assignments need a valid class, subject and academic year. New assignments need an active class, active subjects, and the current or an upcoming year. A request assigning several subjects is all-or-nothing: duplicates (`CLASS_SUBJECT_EXISTS`, naming the subjects) or inactive subjects (`SUBJECT_INACTIVE`) save nothing.
+  - Assigning share-locks the class, year and subjects in the same transaction, so it can't race a deactivation, a year being completed or a delete.
+  - Changing a subject's type doesn't change existing assignments; each keeps its own compulsory flag.
+  - Deactivating a subject keeps its assignments but blocks new ones.
+  - Foreign keys use `ON DELETE RESTRICT`. A subject with assignments (`SUBJECT_IN_USE`), a class with assignments (`CLASS_IN_USE`) or an academic year with assignments (`ACADEMIC_YEAR_IN_USE`) can't be deleted. Assignments referenced by future modules return `CLASS_SUBJECT_IN_USE`.
+- **Dashboard:** Subject Management is listed as an implemented module, with a "Manage subjects" quick action and subject activity in the feed.
+- **Not included yet:** teacher assignment, routines, examinations, marks and the student/teacher portals. They will reference `subjects.id` / `class_subjects.id`.
+
 ## Getting started
 
 ### 1. Database
@@ -237,13 +258,27 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | PUT    | `/classes/:id`          | Admin (`classes:update`)  | Replace name, code, description (and display order if given) |
 | PUT    | `/classes/order`        | Admin (`classes:update`)  | Reorder: `class_ids` lists every class in the new order |
 | PATCH  | `/classes/:id/status`   | Admin (`classes:update`)  | Activate or deactivate (`status`) |
-| DELETE | `/classes/:id`          | Admin (`classes:delete`)  | Delete a class with no sections |
+| DELETE | `/classes/:id`          | Admin (`classes:delete`)  | Delete a class with no sections or subject assignments |
 | GET    | `/sections`             | Admin (`sections:read`)   | List sections: `academic_year_id`, `class_id`, `search`, `status`, `sort`, `order`, `page`, `page_size` |
 | GET    | `/sections/:id`         | Admin (`sections:read`)   | Section details with its class and academic year |
 | POST   | `/sections`             | Admin (`sections:create`) | Create a section (`academic_year_id`, `class_id`, `name`, `code`, `room_number`, `capacity`, `description`, `status`) |
 | PUT    | `/sections/:id`         | Admin (`sections:update`) | Replace a section's details (including its class/year, under the same rules) |
 | PATCH  | `/sections/:id/status`  | Admin (`sections:update`) | Activate or deactivate (`status`) |
 | DELETE | `/sections/:id`         | Admin (`sections:delete`) | Delete a section no other record references |
+| GET    | `/subjects`             | Admin (`subjects:read`)   | List subjects with assignment counts: `search`, `status`, `type`, `sort` (`name`, `code`, `created_at`), `order`, `page`, `page_size` |
+| GET    | `/subjects/stats`       | Admin (`subjects:read`)   | Subject counts by status and type, total and current-year assignments |
+| GET    | `/subjects/:id`         | Admin (`subjects:read`)   | Subject details |
+| GET    | `/subjects/:id/classes` | Admin (`subjects:read`)   | The subject's class assignments, newest academic year first (`academic_year_id` to filter) |
+| POST   | `/subjects`             | Admin (`subjects:create`) | Create a subject (`name`, `code`, `description`, `subject_type`, `full_marks`, `pass_marks`, `status`) |
+| PUT    | `/subjects/:id`         | Admin (`subjects:update`) | Replace a subject's details (blank `subject_type`/`status` keep the current value) |
+| PATCH  | `/subjects/:id/status`  | Admin (`subjects:update`) | Activate or deactivate (`status`) |
+| DELETE | `/subjects/:id`         | Admin (`subjects:delete`) | Delete a subject with no class assignments |
+| GET    | `/classes/:id/subjects` | Admin (`subjects:read`)   | The class's subject assignments, newest academic year first (`academic_year_id` to filter) |
+| GET    | `/class-subjects`       | Admin (`subjects:read`)   | List assignments: `academic_year_id`, `class_id`, `subject_id`, `type` (`compulsory`/`optional`), `search`, `page`, `page_size` |
+| GET    | `/class-subjects/:id`   | Admin (`subjects:read`)   | Assignment details with its subject, class and academic year |
+| POST   | `/class-subjects`       | Admin (`subjects:assign`) | Assign subjects, all or nothing: `class_id`, `academic_year_id`, `subjects: [{subject_id, is_compulsory}]` (`is_compulsory` defaults to the subject type) |
+| PUT    | `/class-subjects/:id`   | Admin (`subjects:assign`) | Change `is_compulsory` for that class and year |
+| DELETE | `/class-subjects/:id`   | Admin (`subjects:assign`) | Remove an assignment no other record references |
 
 ## Project structure
 

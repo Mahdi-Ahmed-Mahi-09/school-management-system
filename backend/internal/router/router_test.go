@@ -27,6 +27,7 @@ type testServer struct {
 	users  *memrepo.UserRepo
 	years  *memrepo.AcademicYearRepo
 	store  *memrepo.ClassStore
+	subj   *memrepo.SubjectStore
 	tm     *auth.TokenManager
 }
 
@@ -42,10 +43,11 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 	teacherRepo := memrepo.NewTeacherRepo(users)
 	yearRepo := memrepo.NewAcademicYearRepo()
 	classStore := memrepo.NewClassStore(yearRepo)
+	subjectStore := memrepo.NewSubjectStore(classStore, yearRepo)
 	dashboardSvc := service.NewDashboardService(&memrepo.DashboardRepo{Users: users, Activity: activity, Students: studentRepo, Teachers: teacherRepo, Years: yearRepo, Classes: classStore}, time.UTC)
 	teacherSvc := service.NewTeacherService(teacherRepo, activity, time.UTC, "BDT")
 	studentSvc := service.NewStudentService(studentRepo, activity, time.UTC)
-	s := &testServer{t: t, users: users, years: yearRepo, store: classStore, tm: tm, engine: New(Deps{
+	s := &testServer{t: t, users: users, years: yearRepo, store: classStore, subj: subjectStore, tm: tm, engine: New(Deps{
 		AuthService:         authSvc,
 		UserService:         userSvc,
 		DashboardService:    dashboardSvc,
@@ -54,6 +56,8 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 		AcademicYearService: service.NewAcademicYearService(yearRepo, activity, time.UTC),
 		ClassService:        service.NewClassService(classStore.Classes(), activity),
 		SectionService:      service.NewSectionService(classStore.Sections(), classStore.Classes(), activity),
+		SubjectService:      service.NewSubjectService(subjectStore.Subjects(), activity),
+		ClassSubjectService: service.NewClassSubjectService(subjectStore.Assignments(), classStore.Classes(), subjectStore.Subjects(), activity),
 		Cookie:              handler.CookieConfig{Name: cookieName},
 		AllowedOrigins:      []string{"http://localhost:5173"},
 		LoginRateLimit:      loginLimit,

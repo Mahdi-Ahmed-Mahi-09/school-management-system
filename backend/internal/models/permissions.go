@@ -44,6 +44,14 @@ const (
 	PermSectionsCreate Permission = "sections:create"
 	PermSectionsUpdate Permission = "sections:update"
 	PermSectionsDelete Permission = "sections:delete"
+
+	// Subject update also covers status changes; subjects:assign covers
+	// adding, editing and removing class-subject assignments.
+	PermSubjectsRead   Permission = "subjects:read"
+	PermSubjectsCreate Permission = "subjects:create"
+	PermSubjectsUpdate Permission = "subjects:update"
+	PermSubjectsDelete Permission = "subjects:delete"
+	PermSubjectsAssign Permission = "subjects:assign"
 )
 
 // selfService permissions are granted to every authenticated role.
@@ -79,6 +87,11 @@ var userAdministration = []Permission{
 	PermSectionsCreate,
 	PermSectionsUpdate,
 	PermSectionsDelete,
+	PermSubjectsRead,
+	PermSubjectsCreate,
+	PermSubjectsUpdate,
+	PermSubjectsDelete,
+	PermSubjectsAssign,
 }
 
 // rolePermissions is the single source of truth for role-based access control.

@@ -70,6 +70,9 @@ func run() error {
 	classRepo := repository.NewPostgresClassRepository(pool)
 	classSvc := service.NewClassService(classRepo, activityRepo)
 	sectionSvc := service.NewSectionService(repository.NewPostgresSectionRepository(pool), classRepo, activityRepo)
+	subjectRepo := repository.NewPostgresSubjectRepository(pool)
+	subjectSvc := service.NewSubjectService(subjectRepo, activityRepo)
+	classSubjectSvc := service.NewClassSubjectService(repository.NewPostgresClassSubjectRepository(pool), classRepo, subjectRepo, activityRepo)
 
 	engine := router.New(router.Deps{
 		AuthService:         authSvc,
@@ -80,6 +83,8 @@ func run() error {
 		AcademicYearService: academicYearSvc,
 		ClassService:        classSvc,
 		SectionService:      sectionSvc,
+		SubjectService:      subjectSvc,
+		ClassSubjectService: classSubjectSvc,
 		Cookie:              handler.CookieConfig{Name: cfg.CookieName, Secure: cfg.CookieSecure, Domain: cfg.CookieDomain},
 		AllowedOrigins:      cfg.CORSAllowedOrigins,
 		LoginRateLimit:      cfg.LoginRateLimit,

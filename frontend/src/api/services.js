@@ -81,6 +81,8 @@ export const classesApi = {
   get: (id) => api.get(`/classes/${id}`).then(unwrap),
   /** Every section of the class, newest academic year first (optionally one year). */
   sections: (id, params) => api.get(`/classes/${id}/sections`, { params }).then(unwrap),
+  /** Every subject assignment of the class, newest academic year first (optionally one year). */
+  subjects: (id, params) => api.get(`/classes/${id}/subjects`, { params }).then(unwrap),
   create: (payload) => api.post('/classes', payload).then(unwrap),
   update: (id, payload) => api.put(`/classes/${id}`, payload).then(unwrap),
   setStatus: (id, status) => api.patch(`/classes/${id}/status`, { status }).then(unwrap),
@@ -98,6 +100,31 @@ export const sectionsApi = {
   update: (id, payload) => api.put(`/sections/${id}`, payload).then(unwrap),
   setStatus: (id, status) => api.patch(`/sections/${id}/status`, { status }).then(unwrap),
   remove: (id) => api.delete(`/sections/${id}`).then(unwrap),
+}
+
+export const subjectsApi = {
+  /** Resolves to `{ subjects, meta }`. */
+  list: (params, { signal } = {}) =>
+    api.get('/subjects', { params, signal }).then((res) => ({ subjects: res.data.data, meta: res.data.meta })),
+  stats: () => api.get('/subjects/stats').then(unwrap),
+  get: (id) => api.get(`/subjects/${id}`).then(unwrap),
+  /** Every class assignment of the subject, newest academic year first. */
+  classes: (id, params) => api.get(`/subjects/${id}/classes`, { params }).then(unwrap),
+  create: (payload) => api.post('/subjects', payload).then(unwrap),
+  update: (id, payload) => api.put(`/subjects/${id}`, payload).then(unwrap),
+  setStatus: (id, status) => api.patch(`/subjects/${id}/status`, { status }).then(unwrap),
+  remove: (id) => api.delete(`/subjects/${id}`).then(unwrap),
+}
+
+export const classSubjectsApi = {
+  /** Resolves to `{ assignments, meta }`. */
+  list: (params, { signal } = {}) =>
+    api.get('/class-subjects', { params, signal }).then((res) => ({ assignments: res.data.data, meta: res.data.meta })),
+  get: (id) => api.get(`/class-subjects/${id}`).then(unwrap),
+  /** payload: `{ class_id, academic_year_id, subjects: [{ subject_id, is_compulsory }] }` — all or nothing. */
+  assign: (payload) => api.post('/class-subjects', payload).then(unwrap),
+  setCompulsory: (id, isCompulsory) => api.put(`/class-subjects/${id}`, { is_compulsory: isCompulsory }).then(unwrap),
+  remove: (id) => api.delete(`/class-subjects/${id}`).then(unwrap),
 }
 
 export const usersApi = {

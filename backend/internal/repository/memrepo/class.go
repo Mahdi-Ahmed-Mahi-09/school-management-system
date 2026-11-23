@@ -22,6 +22,9 @@ type ClassStore struct {
 	sections map[uuid.UUID]*models.ClassSection
 	// SectionInUse simulates other records referencing a section.
 	SectionInUse map[uuid.UUID]bool
+	// SubjectAssignments, when set, counts class-subject assignments of a
+	// class (emulating the class_subjects.class_id foreign key).
+	SubjectAssignments func(classID uuid.UUID) int
 }
 
 // ClassRepo is the in-memory repository.ClassRepository view of a ClassStore.
@@ -40,7 +43,7 @@ var (
 func NewClassStore(years *AcademicYearRepo) *ClassStore {
 	s := &ClassStore{years: years, classes: map[uuid.UUID]*models.Class{}, sections: map[uuid.UUID]*models.ClassSection{},
 		SectionInUse: map[uuid.UUID]bool{}}
-	years.HasSections = func(id uuid.UUID) bool {
+	years.HasReferences = func(id uuid.UUID) bool {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		for _, sec := range s.sections {
@@ -258,6 +261,12 @@ func (r *ClassRepo) Reorder(_ context.Context, ids []uuid.UUID, actorID uuid.UUI
 
 func (r *ClassRepo) Delete(_ context.Context, id uuid.UUID) (*models.Class, error) {
 	s := r.s
+	// Asked before taking s.mu: the subject store calls into this store while
+	// holding its own lock.
+	subjects := 0
+	if s.SubjectAssignments != nil {
+		subjects = s.SubjectAssignments(id)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	c, ok := s.classes[id]
@@ -267,6 +276,9 @@ func (r *ClassRepo) Delete(_ context.Context, id uuid.UUID) (*models.Class, erro
 	withCounts := s.withCounts(c)
 	if withCounts.SectionCount > 0 {
 		return nil, &repository.ClassInUseError{Sections: withCounts.SectionCount}
+	}
+	if subjects > 0 {
+		return nil, &repository.ClassInUseError{SubjectAssignments: subjects}
 	}
 	delete(s.classes, id)
 	return withCounts, nil
@@ -283,6 +295,14 @@ func (s *ClassStore) parents(classID, yearID uuid.UUID) (models.ClassRef, models
 		return models.ClassRef{}, models.YearRef{}, repository.ErrYearNotFound
 	}
 	return models.ClassRef{ID: c.ID, Name: c.Name, Code: c.Code, DisplayOrder: c.DisplayOrder, Status: c.Status}, *yearRef(y), nil
+}
+
+// Parents resolves a class and academic year for other stores, returning
+// ErrClassNotFound / ErrYearNotFound like the share-locked reads.
+func (s *ClassStore) Parents(classID, yearID uuid.UUID) (models.ClassRef, models.YearRef, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.parents(classID, yearID)
 }
 
 // hydrate returns a copy of sec with fresh class and year details (s.mu held).

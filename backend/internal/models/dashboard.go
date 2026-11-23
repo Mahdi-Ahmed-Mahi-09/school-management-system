@@ -34,6 +34,8 @@ var (
 		Description: "Academic years and the current school year."}
 	ModuleAcademic = ModuleInfo{Key: "academic", Name: "Class & Section Management",
 		Description: "Classes and their sections for each academic year."}
+	ModuleSubjects = ModuleInfo{Key: "subjects", Name: "Subject Management",
+		Description: "The subject catalogue and the subjects each class takes per academic year."}
 	ModuleEnrollment = ModuleInfo{Key: "enrollment", Name: "Student Enrollment & Promotion",
 		Description: "Placing students into classes and sections."}
 	ModuleStudents = ModuleInfo{Key: "students", Name: "Student Management",

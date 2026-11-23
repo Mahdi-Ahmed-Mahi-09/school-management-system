@@ -302,7 +302,8 @@ func SameIDSet(a, b []uuid.UUID) bool {
 	return len(seen) == 0
 }
 
-// Delete removes a class that has no sections and no other references.
+// Delete removes a class that has no sections, no subject assignments and no
+// other references.
 func (r *PostgresClassRepository) Delete(ctx context.Context, id uuid.UUID) (*models.Class, error) {
 	var deleted *models.Class
 	err := pgx.BeginFunc(ctx, r.db, func(tx pgx.Tx) error {
@@ -315,6 +316,13 @@ func (r *PostgresClassRepository) Delete(ctx context.Context, id uuid.UUID) (*mo
 		}
 		if deleted.SectionCount > 0 {
 			return &ClassInUseError{Sections: deleted.SectionCount}
+		}
+		var subjects int
+		if err := tx.QueryRow(ctx, `SELECT count(*) FROM class_subjects WHERE class_id = $1`, id).Scan(&subjects); err != nil {
+			return err
+		}
+		if subjects > 0 {
+			return &ClassInUseError{SubjectAssignments: subjects}
 		}
 		_, err = tx.Exec(ctx, `DELETE FROM classes WHERE id = $1`, id)
 		return err

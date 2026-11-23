@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 import {
   Activity,
+  BookOpen,
+  BookPlus,
+  Unlink,
   CalendarCheck2,
   CalendarPlus,
   Camera,
@@ -148,6 +151,13 @@ const ACTIVITY_META = {
   'section.updated': { icon: PencilLine, className: 'bg-sky-50 text-sky-600 ring-sky-100' },
   'section.status_changed': { icon: Power, className: 'bg-amber-50 text-amber-600 ring-amber-100' },
   'section.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
+  'subject.created': { icon: BookOpen, className: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
+  'subject.updated': { icon: PencilLine, className: 'bg-sky-50 text-sky-600 ring-sky-100' },
+  'subject.status_changed': { icon: Power, className: 'bg-amber-50 text-amber-600 ring-amber-100' },
+  'subject.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
+  'class_subject.assigned': { icon: BookPlus, className: 'bg-brand-50 text-brand-600 ring-brand-100' },
+  'class_subject.updated': { icon: PencilLine, className: 'bg-sky-50 text-sky-600 ring-sky-100' },
+  'class_subject.removed': { icon: Unlink, className: 'bg-slate-100 text-slate-600 ring-slate-200' },
 }
 
 function activityMeta(item) {

@@ -76,6 +76,11 @@ export const PERMISSIONS = {
   SECTIONS_CREATE: 'sections:create',
   SECTIONS_UPDATE: 'sections:update',
   SECTIONS_DELETE: 'sections:delete',
+  SUBJECTS_READ: 'subjects:read',
+  SUBJECTS_CREATE: 'subjects:create',
+  SUBJECTS_UPDATE: 'subjects:update',
+  SUBJECTS_DELETE: 'subjects:delete',
+  SUBJECTS_ASSIGN: 'subjects:assign',
 }
 
 export const PERMISSION_LABELS = {

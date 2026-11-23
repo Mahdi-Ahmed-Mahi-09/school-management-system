@@ -22,6 +22,7 @@ var implementedModules = map[string]bool{
 	models.ModuleUsers.Key:         true,
 	models.ModuleAcademicYears.Key: true, // Feature 05
 	models.ModuleAcademic.Key:      true, // Feature 06
+	models.ModuleSubjects.Key:      true, // Feature 07
 	models.ModuleEnrollment.Key:    false,
 	models.ModuleStudents.Key:      true, // Feature 03
 	models.ModuleTeachers.Key:      true, // Feature 04
@@ -35,6 +36,7 @@ var dashboardModules = []models.ModuleInfo{
 	models.ModuleUsers,
 	models.ModuleAcademicYears,
 	models.ModuleAcademic,
+	models.ModuleSubjects,
 	models.ModuleStudents,
 	models.ModuleEnrollment,
 	models.ModuleTeachers,
