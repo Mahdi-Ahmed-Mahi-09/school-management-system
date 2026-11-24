@@ -16,6 +16,12 @@ const ClassDetailPage = lazy(() => import('./pages/classes/ClassDetailPage'))
 const ClassesPage = lazy(() => import('./pages/classes/ClassesPage'))
 const SectionDetailPage = lazy(() => import('./pages/classes/SectionDetailPage'))
 const SectionsPage = lazy(() => import('./pages/classes/SectionsPage'))
+const BulkEnrollPage = lazy(() => import('./pages/enrollments/BulkEnrollPage'))
+const EnrollmentDetailPage = lazy(() => import('./pages/enrollments/EnrollmentDetailPage'))
+const EnrollmentsPage = lazy(() => import('./pages/enrollments/EnrollmentsPage'))
+const PromotionDetailPage = lazy(() => import('./pages/promotions/PromotionDetailPage'))
+const PromotionsPage = lazy(() => import('./pages/promotions/PromotionsPage'))
+const PromotionWizardPage = lazy(() => import('./pages/promotions/PromotionWizardPage'))
 const ClassSubjectsPage = lazy(() => import('./pages/subjects/ClassSubjectsPage'))
 const SubjectDetailPage = lazy(() => import('./pages/subjects/SubjectDetailPage'))
 const SubjectsPage = lazy(() => import('./pages/subjects/SubjectsPage'))
@@ -65,6 +71,20 @@ export default function App() {
                   <Route path="subjects" element={<SubjectsPage />} />
                   <Route path="subjects/:id" element={<SubjectDetailPage />} />
                   <Route path="class-subjects" element={<ClassSubjectsPage />} />
+                </Route>
+                <Route element={<RequireAccess permission={PERMISSIONS.ENROLLMENTS_READ} roles={['admin']} />}>
+                  <Route path="enrollments" element={<EnrollmentsPage />} />
+                  <Route path="enrollments/:id" element={<EnrollmentDetailPage />} />
+                  <Route element={<RequireAccess permission={PERMISSIONS.ENROLLMENTS_CREATE} />}>
+                    <Route path="enrollments/bulk" element={<BulkEnrollPage />} />
+                  </Route>
+                </Route>
+                <Route element={<RequireAccess permission={PERMISSIONS.PROMOTIONS_READ} roles={['admin']} />}>
+                  <Route path="promotions" element={<PromotionsPage />} />
+                  <Route path="promotions/:id" element={<PromotionDetailPage />} />
+                  <Route element={<RequireAccess permission={PERMISSIONS.PROMOTIONS_EXECUTE} />}>
+                    <Route path="promotions/new" element={<PromotionWizardPage />} />
+                  </Route>
                 </Route>
                 <Route element={<RequireAccess permission={PERMISSIONS.STUDENTS_READ} roles={['admin']} />}>
                   <Route path="students" element={<StudentsPage />} />

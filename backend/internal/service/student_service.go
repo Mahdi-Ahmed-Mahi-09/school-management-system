@@ -103,6 +103,9 @@ func mapStudentRepoError(err error) error {
 	case errors.Is(err, repository.ErrDuplicateAdmissionNumber):
 		return apperror.Conflict("ADMISSION_NUMBER_TAKEN", "That student ID is already in use.",
 			map[string]string{"admission_number": "That student ID is already in use."})
+	case errors.Is(err, repository.ErrStudentHasEnrollments):
+		return apperror.Conflict("STUDENT_HAS_ENROLLMENTS",
+			"This student has enrollment records, which are kept as history. Mark the student inactive instead of deleting.", nil)
 	default:
 		return apperror.Internal(err)
 	}

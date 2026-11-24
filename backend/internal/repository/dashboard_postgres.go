@@ -225,11 +225,21 @@ func studentSnapshot(ctx context.Context, tx pgx.Tx, q DashboardQuery, snap *Das
 	}
 
 	// Most recent admissions up to today (future-dated admissions are excluded).
+	// Class and section come from the student's enrollment in the current
+	// academic year (Feature 08), when there is one.
 	rows, err = tx.Query(ctx, `
-		SELECT id, full_name, admission_number, admission_date, status, photo_updated_at
-		FROM students
-		WHERE admission_date <= $1
-		ORDER BY admission_date DESC, created_at DESC
+		SELECT st.id, st.full_name, st.admission_number, st.admission_date, st.status, st.photo_updated_at, pl.class_name, pl.section_name
+		FROM students st
+		LEFT JOIN LATERAL (
+			SELECT c.name AS class_name, s.name AS section_name
+			FROM student_enrollments e
+			JOIN academic_years y ON y.id = e.academic_year_id AND y.is_current
+			JOIN sections s ON s.id = e.section_id
+			JOIN classes c ON c.id = s.class_id
+			WHERE e.student_id = st.id AND e.status NOT IN ('withdrawn', 'transferred')
+		) pl ON true
+		WHERE st.admission_date <= $1
+		ORDER BY st.admission_date DESC, st.created_at DESC
 		LIMIT $2`, today, q.AdmissionLimit)
 	if err != nil {
 		return err
@@ -242,10 +252,13 @@ func studentSnapshot(ctx context.Context, tx pgx.Tx, q DashboardQuery, snap *Das
 			status   string
 			admitted time.Time
 		)
-		if err := rows.Scan(&st.ID, &st.FullName, &st.AdmissionNumber, &admitted, &status, &st.PhotoUpdatedAt); err != nil {
+		var className, sectionName *string
+		if err := rows.Scan(&st.ID, &st.FullName, &st.AdmissionNumber, &admitted, &status, &st.PhotoUpdatedAt, &className, &sectionName); err != nil {
 			return err
 		}
 		snap.RecentAdmissions = append(snap.RecentAdmissions, models.Admission{
+			ClassName:       className,
+			SectionName:     sectionName,
 			ID:              st.ID,
 			FullName:        st.FullName,
 			AdmissionNumber: st.AdmissionNumber,
@@ -281,7 +294,30 @@ func classSnapshot(ctx context.Context, tx pgx.Tx, snap *DashboardSnapshot) erro
 		return err
 	}
 	snap.Sections.AcademicYear = year
-	return tx.QueryRow(ctx, `
+	if err := tx.QueryRow(ctx, `
 		SELECT count(*), count(*) FILTER (WHERE status = 'active') FROM sections WHERE academic_year_id = $1`, year.ID).
-		Scan(&snap.Sections.Total, &snap.Sections.Active)
+		Scan(&snap.Sections.Total, &snap.Sections.Active); err != nil {
+		return err
+	}
+	// Students per class: classes with sections this year, in display order,
+	// counting students who currently hold a place (status enrolled).
+	rows, err := tx.Query(ctx, `
+		SELECT c.name, count(DISTINCT s.id), count(e.id) FILTER (WHERE e.status = 'enrolled')
+		FROM classes c
+		JOIN sections s ON s.class_id = c.id AND s.academic_year_id = $1
+		LEFT JOIN student_enrollments e ON e.section_id = s.id
+		GROUP BY c.id, c.name, c.display_order
+		ORDER BY c.display_order, lower(c.name)`, year.ID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item models.ClassDistributionItem
+		if err := rows.Scan(&item.ClassName, &item.Sections, &item.Students); err != nil {
+			return err
+		}
+		snap.ClassDistribution = append(snap.ClassDistribution, item)
+	}
+	return rows.Err()
 }

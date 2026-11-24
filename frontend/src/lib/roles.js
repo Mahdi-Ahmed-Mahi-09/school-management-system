@@ -81,6 +81,12 @@ export const PERMISSIONS = {
   SUBJECTS_UPDATE: 'subjects:update',
   SUBJECTS_DELETE: 'subjects:delete',
   SUBJECTS_ASSIGN: 'subjects:assign',
+  ENROLLMENTS_READ: 'enrollments:read',
+  ENROLLMENTS_CREATE: 'enrollments:create',
+  ENROLLMENTS_UPDATE: 'enrollments:update',
+  ENROLLMENTS_DELETE: 'enrollments:delete',
+  PROMOTIONS_READ: 'promotions:read',
+  PROMOTIONS_EXECUTE: 'promotions:execute',
 }
 
 export const PERMISSION_LABELS = {

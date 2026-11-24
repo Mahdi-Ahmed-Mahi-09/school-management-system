@@ -58,10 +58,15 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 		SectionService:      service.NewSectionService(classStore.Sections(), classStore.Classes(), activity),
 		SubjectService:      service.NewSubjectService(subjectStore.Subjects(), activity),
 		ClassSubjectService: service.NewClassSubjectService(subjectStore.Assignments(), classStore.Classes(), subjectStore.Subjects(), activity),
-		Cookie:              handler.CookieConfig{Name: cookieName},
-		AllowedOrigins:      []string{"http://localhost:5173"},
-		LoginRateLimit:      loginLimit,
-		LoginRateWindow:     time.Minute,
+		// Enrollment and promotion repositories are PostgreSQL-only; their
+		// behaviour is covered by the integration test. Here they serve
+		// authorization and request-validation checks, which never reach them.
+		EnrollmentService: service.NewEnrollmentService(nil, studentRepo, activity),
+		PromotionService:  service.NewPromotionService(nil, activity),
+		Cookie:            handler.CookieConfig{Name: cookieName},
+		AllowedOrigins:    []string{"http://localhost:5173"},
+		LoginRateLimit:    loginLimit,
+		LoginRateWindow:   time.Minute,
 	})}
 	for _, u := range []struct {
 		name string

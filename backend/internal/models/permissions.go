@@ -52,6 +52,15 @@ const (
 	PermSubjectsUpdate Permission = "subjects:update"
 	PermSubjectsDelete Permission = "subjects:delete"
 	PermSubjectsAssign Permission = "subjects:assign"
+
+	// Enrollment update also covers withdrawing and re-admitting; promotions
+	// are previewed and executed with promotions:execute.
+	PermEnrollmentsRead   Permission = "enrollments:read"
+	PermEnrollmentsCreate Permission = "enrollments:create"
+	PermEnrollmentsUpdate Permission = "enrollments:update"
+	PermEnrollmentsDelete Permission = "enrollments:delete"
+	PermPromotionsRead    Permission = "promotions:read"
+	PermPromotionsExecute Permission = "promotions:execute"
 )
 
 // selfService permissions are granted to every authenticated role.
@@ -92,6 +101,12 @@ var userAdministration = []Permission{
 	PermSubjectsUpdate,
 	PermSubjectsDelete,
 	PermSubjectsAssign,
+	PermEnrollmentsRead,
+	PermEnrollmentsCreate,
+	PermEnrollmentsUpdate,
+	PermEnrollmentsDelete,
+	PermPromotionsRead,
+	PermPromotionsExecute,
 }
 
 // rolePermissions is the single source of truth for role-based access control.

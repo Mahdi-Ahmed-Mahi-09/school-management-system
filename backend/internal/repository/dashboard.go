@@ -46,6 +46,10 @@ type DashboardSnapshot struct {
 	// Classes, and sections in the current academic year (Feature 06).
 	Classes  models.ClassMetric
 	Sections models.SectionMetric
+
+	// Students currently enrolled per class in the current academic year
+	// (Feature 08); empty when no year is current.
+	ClassDistribution []models.ClassDistributionItem
 }
 
 // DashboardRepository reads aggregated dashboard data.

@@ -34,6 +34,8 @@ type Deps struct {
 	SectionService      *service.SectionService
 	SubjectService      *service.SubjectService
 	ClassSubjectService *service.ClassSubjectService
+	EnrollmentService   *service.EnrollmentService
+	PromotionService    *service.PromotionService
 	Cookie              handler.CookieConfig
 	AllowedOrigins      []string
 	LoginRateLimit      int
@@ -71,6 +73,7 @@ func New(d Deps) *gin.Engine {
 	yearH := handler.NewAcademicYearHandler(d.AcademicYearService)
 	classH := handler.NewClassHandler(d.ClassService, d.SectionService)
 	subjectH := handler.NewSubjectHandler(d.SubjectService, d.ClassSubjectService)
+	enrollH := handler.NewEnrollmentHandler(d.EnrollmentService, d.PromotionService)
 	loginLimiter := middleware.NewRateLimiter(d.LoginRateLimit, d.LoginRateWindow)
 
 	api := r.Group("/api/v1", middleware.CSRFGuard())
@@ -127,6 +130,7 @@ func New(d Deps) *gin.Engine {
 	students.PUT("/:id/photo", middleware.RequirePermission(models.PermStudentsUpdate), studentH.UploadPhoto)
 	students.DELETE("/:id/photo", middleware.RequirePermission(models.PermStudentsUpdate), studentH.RemovePhoto)
 	students.DELETE("/:id", middleware.RequirePermission(models.PermStudentsDelete), studentH.Delete)
+	students.GET("/:id/enrollment-history", middleware.RequirePermission(models.PermEnrollmentsRead), enrollH.StudentEnrollmentHistory)
 
 	// Teacher management: admin role AND the specific permission are both required.
 	// Salary visibility is decided per field by the teachers:view_salary permission.
@@ -194,6 +198,25 @@ func New(d Deps) *gin.Engine {
 	classSubjects.POST("", middleware.RequirePermission(models.PermSubjectsAssign), subjectH.AssignSubjects)
 	classSubjects.PUT("/:id", middleware.RequirePermission(models.PermSubjectsAssign), subjectH.UpdateAssignment)
 	classSubjects.DELETE("/:id", middleware.RequirePermission(models.PermSubjectsAssign), subjectH.DeleteAssignment)
+
+	// Enrollments and promotions: admin role AND the specific permission are
+	// both required. Withdrawing/re-admitting uses the update permission.
+	enrollments := protected.Group("/enrollments", middleware.RequireRoles(models.RoleAdmin))
+	enrollments.GET("", middleware.RequirePermission(models.PermEnrollmentsRead), enrollH.ListEnrollments)
+	enrollments.GET("/stats", middleware.RequirePermission(models.PermEnrollmentsRead), enrollH.EnrollmentStats)
+	enrollments.GET("/unenrolled-students", middleware.RequirePermission(models.PermEnrollmentsCreate), enrollH.UnenrolledStudents)
+	enrollments.GET("/:id", middleware.RequirePermission(models.PermEnrollmentsRead), enrollH.GetEnrollment)
+	enrollments.POST("", middleware.RequirePermission(models.PermEnrollmentsCreate), enrollH.CreateEnrollment)
+	enrollments.POST("/bulk", middleware.RequirePermission(models.PermEnrollmentsCreate), enrollH.BulkEnroll)
+	enrollments.PUT("/:id", middleware.RequirePermission(models.PermEnrollmentsUpdate), enrollH.UpdateEnrollment)
+	enrollments.PATCH("/:id/status", middleware.RequirePermission(models.PermEnrollmentsUpdate), enrollH.SetEnrollmentStatus)
+	enrollments.DELETE("/:id", middleware.RequirePermission(models.PermEnrollmentsDelete), enrollH.DeleteEnrollment)
+
+	promotions := protected.Group("/promotions", middleware.RequireRoles(models.RoleAdmin))
+	promotions.GET("", middleware.RequirePermission(models.PermPromotionsRead), enrollH.ListPromotions)
+	promotions.GET("/:id", middleware.RequirePermission(models.PermPromotionsRead), enrollH.GetPromotion)
+	promotions.POST("/preview", middleware.RequirePermission(models.PermPromotionsExecute), enrollH.PreviewPromotion)
+	promotions.POST("/execute", middleware.RequirePermission(models.PermPromotionsExecute), enrollH.ExecutePromotion)
 
 	return r
 }

@@ -98,10 +98,9 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 		module  *models.ModuleInfo
 		hasData bool
 	}{
-		"class_distribution": {d.Academic.ClassDistribution.Status, d.Academic.ClassDistribution.Module, d.Academic.ClassDistribution.Data != nil},
-		"attendance":         {d.Attendance.Status, d.Attendance.Module, d.Attendance.Data != nil},
-		"fees":               {d.Fees.Status, d.Fees.Module, d.Fees.Data != nil},
-		"recent_notices":     {d.RecentNotices.Status, d.RecentNotices.Module, d.RecentNotices.Data != nil},
+		"attendance":     {d.Attendance.Status, d.Attendance.Module, d.Attendance.Data != nil},
+		"fees":           {d.Fees.Status, d.Fees.Module, d.Fees.Data != nil},
+		"recent_notices": {d.RecentNotices.Status, d.RecentNotices.Module, d.RecentNotices.Data != nil},
 	}
 	for name, c := range checks {
 		if c.status != models.SectionUnavailable || c.module == nil || c.module.Name == "" || c.hasData {
@@ -118,9 +117,10 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 	if d.Academic.Enrollment.Status != models.SectionAvailable || d.RecentAdmissions.Status != models.SectionAvailable {
 		t.Error("enrollment and recent admissions should be available now that students exist")
 	}
-	// Students per class needs enrollment, which doesn't exist yet.
-	if m := d.Academic.ClassDistribution.Module; m == nil || m.Key != models.ModuleEnrollment.Key {
-		t.Errorf("class distribution should wait for the enrollment module: %+v", m)
+	// Students per class comes from enrollments (Feature 08): available, and
+	// empty while no academic year is current.
+	if cd := d.Academic.ClassDistribution; cd.Status != models.SectionAvailable || cd.Module != nil || cd.Data == nil || len(*cd.Data) != 0 {
+		t.Errorf("class distribution = %+v", cd)
 	}
 	// Classes and sections are real since Feature 06 (zero here, no current year).
 	if c := d.Overview.Classes; c.Status != models.SectionAvailable || c.Data.Total != 0 {
@@ -133,6 +133,7 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 	wantAvailable := map[string]bool{
 		models.ModuleUsers.Key: true, models.ModuleAcademicYears.Key: true, models.ModuleAcademic.Key: true,
 		models.ModuleSubjects.Key: true, models.ModuleStudents.Key: true, models.ModuleTeachers.Key: true,
+		models.ModuleEnrollment.Key: true,
 	}
 	for _, m := range d.Modules {
 		if m.Available != wantAvailable[m.Key] {

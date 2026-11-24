@@ -81,6 +81,9 @@ func mapSectionRepoError(err error) error {
 	case errors.Is(err, repository.ErrDuplicateSectionCode):
 		msg := "Another section in this academic year already uses this code."
 		return apperror.Conflict("SECTION_CODE_TAKEN", msg, map[string]string{"code": msg})
+	case errors.Is(err, repository.ErrSectionHasEnrollments):
+		return apperror.Conflict("SECTION_HAS_ENROLLMENTS",
+			"Students are enrolled in this section, so it can't be moved to another class or academic year.", nil)
 	case errors.Is(err, repository.ErrSectionInUse):
 		return apperror.Conflict("SECTION_IN_USE", "This section is used by other records (such as enrollments), so it can't be deleted.", nil)
 	default:

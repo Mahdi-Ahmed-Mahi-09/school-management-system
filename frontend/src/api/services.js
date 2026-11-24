@@ -38,6 +38,8 @@ export const studentsApi = {
     return api.put(`/students/${id}/photo`, form, { headers: { 'Content-Type': undefined } }).then(unwrap)
   },
   removePhoto: (id) => api.delete(`/students/${id}/photo`).then(unwrap),
+  /** The student's enrollments, newest academic year first. */
+  enrollmentHistory: (id) => api.get(`/students/${id}/enrollment-history`).then(unwrap),
 }
 
 export const teachersApi = {
@@ -125,6 +127,35 @@ export const classSubjectsApi = {
   assign: (payload) => api.post('/class-subjects', payload).then(unwrap),
   setCompulsory: (id, isCompulsory) => api.put(`/class-subjects/${id}`, { is_compulsory: isCompulsory }).then(unwrap),
   remove: (id) => api.delete(`/class-subjects/${id}`).then(unwrap),
+}
+
+export const enrollmentsApi = {
+  /** Resolves to `{ enrollments, meta }`. */
+  list: (params, { signal } = {}) =>
+    api.get('/enrollments', { params, signal }).then((res) => ({ enrollments: res.data.data, meta: res.data.meta })),
+  /** Counts for one academic year (default: the current year). */
+  stats: (params) => api.get('/enrollments/stats', { params }).then(unwrap),
+  /** Active students not enrolled in `academic_year_id`; resolves to `{ students, meta }`. */
+  unenrolled: (params, { signal } = {}) =>
+    api.get('/enrollments/unenrolled-students', { params, signal }).then((res) => ({ students: res.data.data, meta: res.data.meta })),
+  get: (id) => api.get(`/enrollments/${id}`).then(unwrap),
+  create: (payload) => api.post('/enrollments', payload).then(unwrap),
+  /** Bulk enrollment report; `dry_run: true` validates and assigns rolls without saving. */
+  bulk: (payload) => api.post('/enrollments/bulk', payload).then(unwrap),
+  update: (id, payload) => api.put(`/enrollments/${id}`, payload).then(unwrap),
+  setStatus: (id, status, reason) => api.patch(`/enrollments/${id}/status`, { status, reason }).then(unwrap),
+  remove: (id) => api.delete(`/enrollments/${id}`).then(unwrap),
+}
+
+export const promotionsApi = {
+  /** Resolves to `{ batches, meta }`. */
+  list: (params, { signal } = {}) =>
+    api.get('/promotions', { params, signal }).then((res) => ({ batches: res.data.data, meta: res.data.meta })),
+  get: (id) => api.get(`/promotions/${id}`).then(unwrap),
+  /** Computes the outcome without saving anything. */
+  preview: (payload) => api.post('/promotions/preview', payload).then(unwrap),
+  /** Resolves to `{ batch, replayed }`; `request_id` makes retries safe. */
+  execute: (payload) => api.post('/promotions/execute', payload).then((res) => ({ batch: res.data.data, replayed: !!res.data.meta?.replayed })),
 }
 
 export const usersApi = {

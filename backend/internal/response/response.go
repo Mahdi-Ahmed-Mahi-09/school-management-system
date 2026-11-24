@@ -51,6 +51,11 @@ func Paginated(c *gin.Context, data any, meta Pagination) {
 	c.JSON(http.StatusOK, envelope{Success: true, Data: data, Meta: meta})
 }
 
+// WithMeta writes a success response with a status code and metadata.
+func WithMeta(c *gin.Context, status int, data, meta any) {
+	c.JSON(status, envelope{Success: true, Data: data, Meta: meta})
+}
+
 // Error writes an error response and aborts the handler chain.
 // Unknown errors are logged and replaced by a generic message.
 func Error(c *gin.Context, err error) {

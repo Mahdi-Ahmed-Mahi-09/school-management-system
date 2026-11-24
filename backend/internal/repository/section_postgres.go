@@ -262,6 +262,17 @@ func (r *PostgresSectionRepository) Update(ctx context.Context, id, actorID uuid
 		if err := check(current, class, year); err != nil {
 			return err
 		}
+		// Enrolled students stay with their section: it can't move to another
+		// class or academic year once it has enrollments.
+		if next.ClassID != current.ClassID || next.AcademicYearID != current.AcademicYearID {
+			var enrolled int
+			if err := tx.QueryRow(ctx, `SELECT count(*) FROM student_enrollments WHERE section_id = $1`, id).Scan(&enrolled); err != nil {
+				return err
+			}
+			if enrolled > 0 {
+				return ErrSectionHasEnrollments
+			}
+		}
 		if _, err := tx.Exec(ctx, `
 			UPDATE sections SET class_id = $2, academic_year_id = $3, name = $4, code = $5, room_number = $6,
 			       capacity = $7, description = $8, status = $9, updated_by = $10, updated_at = now()

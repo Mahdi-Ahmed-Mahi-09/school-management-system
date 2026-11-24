@@ -3,6 +3,8 @@ import {
   Activity,
   BookOpen,
   BookPlus,
+  ClipboardList,
+  Sparkles,
   Unlink,
   CalendarCheck2,
   CalendarPlus,
@@ -157,6 +159,12 @@ const ACTIVITY_META = {
   'subject.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
   'class_subject.assigned': { icon: BookPlus, className: 'bg-brand-50 text-brand-600 ring-brand-100' },
   'class_subject.updated': { icon: PencilLine, className: 'bg-sky-50 text-sky-600 ring-sky-100' },
+  'enrollment.created': { icon: ClipboardList, className: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
+  'enrollment.bulk_created': { icon: ClipboardList, className: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
+  'enrollment.updated': { icon: PencilLine, className: 'bg-sky-50 text-sky-600 ring-sky-100' },
+  'enrollment.status_changed': { icon: Power, className: 'bg-amber-50 text-amber-600 ring-amber-100' },
+  'enrollment.deleted': { icon: Trash2, className: 'bg-rose-50 text-rose-600 ring-rose-100' },
+  'promotion.executed': { icon: Sparkles, className: 'bg-brand-50 text-brand-600 ring-brand-100' },
   'class_subject.removed': { icon: Unlink, className: 'bg-slate-100 text-slate-600 ring-slate-200' },
 }
 

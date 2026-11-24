@@ -154,6 +154,35 @@ Admin-only subject catalogue and class-subject assignments. A **subject** (Bangl
 - **Dashboard:** Subject Management is listed as an implemented module, with a "Manage subjects" quick action and subject activity in the feed.
 - **Not included yet:** teacher assignment, routines, examinations, marks and the student/teacher portals. They will reference `subjects.id` / `class_subjects.id`.
 
+### Feature 08 — Student Enrollment & Promotion
+
+Admin-only enrollment of existing students (Feature 03) into a class and section (Feature 06) for an academic year (Feature 05), and year-end promotion with a full audit trail.
+
+- **Pages:**
+  - Enrollments (`/enrollments`): real counts for the selected year (total, currently enrolled, new admissions, withdrawn), filters (year, class, section, status, admission type) and search by student name, student ID or roll number. Row actions: view, edit, change class/section, withdraw, mark transferred, re-admit, and delete (only for enrollments made by mistake).
+  - Enroll a student (dialog): picks from active students not yet enrolled in the year. The roll number is optional and defaults to the next free number in the section.
+  - Bulk enrollment (`/enrollments/bulk`): choose year, class, section, admission type, date and an optional starting roll; select students; the server checks them and assigns roll numbers (dry run); adjust any roll; confirm. A report lists every student enrolled or not, with the reason.
+  - Enrollment details (`/enrollments/:id`): placement, status and reason, remarks, record history and the student's enrollments across all years, with a link to the student profile. The student profile also shows this history.
+  - Promotions (`/promotions`), promotion wizard (`/promotions/new`) and batch details (`/promotions/:id`): choose source and target years, select students (all, by class or individually), map each class to its destination (suggested by display order, never by name), set per-student exceptions (repeat, complete studies, exclude, section, roll number), choose how roll numbers are assigned, preview, then confirm.
+- **Data:**
+  - `student_enrollments`: student, academic year, section (the class comes from the section), roll number, admission type (`new`, `continuing`, `readmission`), enrollment date, status (`enrolled`, `promoted`, `repeated`, `completed`, `withdrawn`, `transferred`), status note, remarks.
+  - `promotion_batches` and `promotion_batch_items`: every confirmed promotion with its counts, who ran it and when, and each student's previous and new placement, decision and outcome.
+- **Rules (enforced by the API and the database):**
+  - One enrollment per student per academic year (`UNIQUE (student_id, academic_year_id)`); withdrawn students are re-admitted rather than enrolled twice.
+  - A composite foreign key guarantees the section belongs to the enrollment's academic year; the API also checks that it belongs to the chosen class, that class and section are active, and that the year isn't completed.
+  - Roll numbers are unique within a section among students who hold a place (a partial unique index); withdrawing or transferring frees the number.
+  - The enrollment date must fall within the academic year, or up to 180 days before it starts.
+  - Every enrollment write takes a per-academic-year advisory lock and share-locks the section, class and year, so concurrent writes can't double-book a student or a roll number.
+  - Promoted, repeated and completed are set only by promotions. Those enrollments, and any enrollment in a completed year, keep their placement; only remarks can change. Enrollments referenced by promotion history can't be deleted.
+  - Students with enrollments can't be deleted (`STUDENT_HAS_ENROLLMENTS`), and a section with enrollments can't be moved to another class or year (`SECTION_HAS_ENROLLMENTS`).
+- **Promotion safety:**
+  - Preview never writes. Execution locks both years and the selected enrollments, re-reads everything and re-validates the whole plan on the server (eligibility, destination class and section in the target year, active class and section, roll numbers), then applies it in one transaction. Any problem means nothing is saved.
+  - Only enrollments still `enrolled` are eligible, and students already enrolled in the target year are skipped. The target year must be later and not completed.
+  - Each confirmation carries a `request_id`; submitting it again returns the same batch instead of running twice. An enrollment can be processed by at most one promotion (unique index).
+  - Roll numbers: `keep` keeps current numbers where free and gives the next free number otherwise (noted per student); `sequential` renumbers each destination section from 1. Manual numbers are validated too.
+- **Dashboard:** "Students per class" is real (students currently enrolled in each class of the current year), recent admissions show their current class and section, and Student Enrollment & Promotion is listed as implemented.
+- **Not included yet:** attendance, fees, examinations and the portals will reference `student_enrollments.id`.
+
 ## Getting started
 
 ### 1. Database
@@ -230,7 +259,7 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | GET    | `/students/:id`         | Admin (`students:read`)   | Student details |
 | POST   | `/students`             | Admin (`students:create`) | Create a student |
 | PUT    | `/students/:id`         | Admin (`students:update`) | Replace a student's details |
-| DELETE | `/students/:id`         | Admin (`students:delete`) | Permanently delete a student and their photo |
+| DELETE | `/students/:id`         | Admin (`students:delete`) | Permanently delete a student and their photo (refused once they have enrollments) |
 | GET    | `/students/:id/photo`   | Admin (`students:read`)   | The stored photo (cached privately when requested with `?v=`) |
 | PUT    | `/students/:id/photo`   | Admin (`students:update`) | Upload a photo (multipart form field `photo`) |
 | DELETE | `/students/:id/photo`   | Admin (`students:update`) | Remove the photo |
@@ -279,6 +308,20 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | POST   | `/class-subjects`       | Admin (`subjects:assign`) | Assign subjects, all or nothing: `class_id`, `academic_year_id`, `subjects: [{subject_id, is_compulsory}]` (`is_compulsory` defaults to the subject type) |
 | PUT    | `/class-subjects/:id`   | Admin (`subjects:assign`) | Change `is_compulsory` for that class and year |
 | DELETE | `/class-subjects/:id`   | Admin (`subjects:assign`) | Remove an assignment no other record references |
+| GET    | `/enrollments`          | Admin (`enrollments:read`) | List enrollments: `academic_year_id`, `class_id`, `section_id`, `status`, `admission_type`, `search` (name, student ID, roll), `sort` (`roll`, `name`, `student_id`, `enrollment_date`, `created_at`), `order`, `page`, `page_size` |
+| GET    | `/enrollments/stats`    | Admin (`enrollments:read`) | Counts for one year (`academic_year_id`, default: the current year) |
+| GET    | `/enrollments/unenrolled-students` | Admin (`enrollments:create`) | Active students not enrolled in `academic_year_id` (`search`, `page`, `page_size`) |
+| GET    | `/enrollments/:id`      | Admin (`enrollments:read`) | Enrollment details with student, year, class and section |
+| POST   | `/enrollments`          | Admin (`enrollments:create`) | Enroll one student (`student_id`, `academic_year_id`, `class_id`, `section_id`, `roll_number`, `admission_type`, `enrollment_date`, `remarks`) |
+| POST   | `/enrollments/bulk`     | Admin (`enrollments:create`) | Enroll many students into one section; returns a per-student report. `dry_run: true` checks and assigns rolls without saving |
+| PUT    | `/enrollments/:id`      | Admin (`enrollments:update`) | Edit class/section (same year), roll number, admission type, date and remarks |
+| PATCH  | `/enrollments/:id/status` | Admin (`enrollments:update`) | Withdraw, mark transferred, or re-admit (`status`, `reason`) |
+| DELETE | `/enrollments/:id`      | Admin (`enrollments:delete`) | Delete an enrollment made by mistake (enrolled, open year, not in a promotion) |
+| GET    | `/students/:id/enrollment-history` | Admin (`enrollments:read`) | The student's enrollments, newest academic year first |
+| POST   | `/promotions/preview`   | Admin (`promotions:execute`) | Compute a promotion without saving: summary, destinations, per-student outcome, blocking issues |
+| POST   | `/promotions/execute`   | Admin (`promotions:execute`) | Re-validate and apply in one transaction (`request_id` required; a repeat returns the same batch with `meta.replayed`) |
+| GET    | `/promotions`           | Admin (`promotions:read`) | Promotion batches, newest first (`academic_year_id`, `page`, `page_size`) |
+| GET    | `/promotions/:id`       | Admin (`promotions:read`) | A batch with every student's decision, outcome and placements |
 
 ## Project structure
 

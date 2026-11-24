@@ -24,6 +24,7 @@ import { buttonClasses } from '../../components/ui/buttonStyles'
 import { Card, EmptyState, ErrorState, StatusBadge } from '../../components/ui/Display'
 import { DetailItem, DetailSection, PhoneLink, ProfileSkeleton } from '../../components/ui/Sections'
 import { useAuth } from '../../hooks/useAuth'
+import { StudentEnrollmentCard } from '../../components/enrollments/StudentEnrollmentCard'
 import { PERMISSIONS } from '../../lib/roles'
 import { ageOn, formatDateOnly, genderLabel } from '../../lib/students'
 import { formatDateTime } from '../../lib/utils'
@@ -181,6 +182,8 @@ export default function StudentProfilePage() {
           <DetailItem label="Last updated" value={formatDateTime(s.updated_at)} />
         </DetailSection>
       </div>
+
+      {can(PERMISSIONS.ENROLLMENTS_READ) && <StudentEnrollmentCard student={s} />}
 
       <DeleteStudentDialog
         student={s}

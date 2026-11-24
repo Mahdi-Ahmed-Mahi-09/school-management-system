@@ -210,8 +210,12 @@ func (r *PostgresStudentRepository) Update(ctx context.Context, s *models.Studen
 }
 
 // Delete removes a student; the photo is removed by ON DELETE CASCADE.
+// Students with enrollments (history) can't be deleted: ErrStudentHasEnrollments.
 func (r *PostgresStudentRepository) Delete(ctx context.Context, id uuid.UUID) (*models.Student, error) {
 	deleted, err := scanStudent(r.db.QueryRow(ctx, `DELETE FROM students WHERE id = $1 RETURNING `+studentColumns, id))
+	if isReferencedError(err) {
+		return nil, ErrStudentHasEnrollments
+	}
 	if err != nil {
 		return nil, mapStudentError(err)
 	}

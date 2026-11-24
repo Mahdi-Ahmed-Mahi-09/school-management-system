@@ -23,7 +23,7 @@ var implementedModules = map[string]bool{
 	models.ModuleAcademicYears.Key: true, // Feature 05
 	models.ModuleAcademic.Key:      true, // Feature 06
 	models.ModuleSubjects.Key:      true, // Feature 07
-	models.ModuleEnrollment.Key:    false,
+	models.ModuleEnrollment.Key:    true, // Feature 08
 	models.ModuleStudents.Key:      true, // Feature 03
 	models.ModuleTeachers.Key:      true, // Feature 04
 	models.ModuleAttendance.Key:    false,
@@ -61,6 +61,13 @@ func NewDashboardService(repo repository.DashboardRepository, loc *time.Location
 		loc = time.UTC
 	}
 	return &DashboardService{repo: repo, loc: loc, now: time.Now}
+}
+
+func classDistribution(items []models.ClassDistributionItem) []models.ClassDistributionItem {
+	if items == nil {
+		return []models.ClassDistributionItem{}
+	}
+	return items
 }
 
 // monthStarts returns the first instant of the last n months (oldest first).
@@ -119,8 +126,9 @@ func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDas
 				NewThisMonth:  snap.Students.NewThisMonth,
 				Monthly:       snap.AdmissionsByMonth,
 			}),
-			// Students per class needs students placed into sections (enrollment).
-			ClassDistribution: models.Unavailable[[]models.ClassDistributionItem](models.ModuleEnrollment),
+			// Students per class in the current academic year, from enrollments
+			// (Feature 08); empty when no year is current.
+			ClassDistribution: models.Available(classDistribution(snap.ClassDistribution)),
 		},
 		Attendance:       models.Unavailable[models.AttendanceSummary](models.ModuleAttendance),
 		Fees:             models.Unavailable[models.FeeSummary](models.ModuleFees),
