@@ -63,10 +63,12 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 		// authorization and request-validation checks, which never reach them.
 		EnrollmentService: service.NewEnrollmentService(nil, studentRepo, activity),
 		PromotionService:  service.NewPromotionService(nil, activity),
-		Cookie:            handler.CookieConfig{Name: cookieName},
-		AllowedOrigins:    []string{"http://localhost:5173"},
-		LoginRateLimit:    loginLimit,
-		LoginRateWindow:   time.Minute,
+		// Likewise for teacher assignments.
+		TeacherAssignments: service.NewTeacherAssignmentService(nil, teacherRepo, classStore.Classes(), activity),
+		Cookie:             handler.CookieConfig{Name: cookieName},
+		AllowedOrigins:     []string{"http://localhost:5173"},
+		LoginRateLimit:     loginLimit,
+		LoginRateWindow:    time.Minute,
 	})}
 	for _, u := range []struct {
 		name string

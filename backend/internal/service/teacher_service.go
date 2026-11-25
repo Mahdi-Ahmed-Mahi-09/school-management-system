@@ -116,6 +116,9 @@ func mapTeacherRepoError(err error) error {
 	case errors.Is(err, repository.ErrDuplicateEmployeeID):
 		return apperror.Conflict("EMPLOYEE_ID_TAKEN", "That teacher ID is already in use.",
 			map[string]string{"employee_id": "That teacher ID is already in use."})
+	case errors.Is(err, repository.ErrTeacherHasAssignments):
+		return apperror.Conflict("TEACHER_HAS_ASSIGNMENTS",
+			"This teacher has class or subject assignments, which are kept as history. Mark the teacher inactive instead of deleting.", nil)
 	case errors.Is(err, repository.ErrAccountNotFound):
 		return apperror.Validation(map[string]string{"user_id": "That account no longer exists."})
 	case errors.Is(err, repository.ErrAccountNotTeacher):

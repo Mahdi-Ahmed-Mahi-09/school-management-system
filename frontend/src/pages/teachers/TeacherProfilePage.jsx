@@ -21,6 +21,7 @@ import {
 import { getErrorMessage } from '../../api/client'
 import { teachersApi } from '../../api/services'
 import { DeleteTeacherDialog } from '../../components/teachers/DeleteTeacherDialog'
+import { TeacherAssignmentsCard } from '../../components/teacher-assignments/TeacherAssignmentsCard'
 import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
 import { Button } from '../../components/ui/Button'
 import { buttonClasses } from '../../components/ui/buttonStyles'
@@ -165,6 +166,8 @@ export default function TeacherProfilePage() {
           </div>
         </div>
       </Card>
+
+      {can(PERMISSIONS.TEACHER_ASSIGNMENTS_READ) && <TeacherAssignmentsCard teacher={t} />}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <DetailSection title="Personal information" icon={UserRound}>

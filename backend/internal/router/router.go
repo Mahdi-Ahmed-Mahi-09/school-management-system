@@ -36,6 +36,7 @@ type Deps struct {
 	ClassSubjectService *service.ClassSubjectService
 	EnrollmentService   *service.EnrollmentService
 	PromotionService    *service.PromotionService
+	TeacherAssignments  *service.TeacherAssignmentService
 	Cookie              handler.CookieConfig
 	AllowedOrigins      []string
 	LoginRateLimit      int
@@ -74,6 +75,7 @@ func New(d Deps) *gin.Engine {
 	classH := handler.NewClassHandler(d.ClassService, d.SectionService)
 	subjectH := handler.NewSubjectHandler(d.SubjectService, d.ClassSubjectService)
 	enrollH := handler.NewEnrollmentHandler(d.EnrollmentService, d.PromotionService)
+	assignH := handler.NewTeacherAssignmentHandler(d.TeacherAssignments)
 	loginLimiter := middleware.NewRateLimiter(d.LoginRateLimit, d.LoginRateWindow)
 
 	api := r.Group("/api/v1", middleware.CSRFGuard())
@@ -145,6 +147,7 @@ func New(d Deps) *gin.Engine {
 	teachers.PUT("/:id/photo", middleware.RequirePermission(models.PermTeachersUpdate), teacherH.UploadPhoto)
 	teachers.DELETE("/:id/photo", middleware.RequirePermission(models.PermTeachersUpdate), teacherH.RemovePhoto)
 	teachers.DELETE("/:id", middleware.RequirePermission(models.PermTeachersDelete), teacherH.Delete)
+	teachers.GET("/:id/assignments", middleware.RequirePermission(models.PermTeacherAssignmentsRead), assignH.TeacherAssignments)
 
 	// Academic years: admin role AND the specific permission are both required.
 	years := protected.Group("/academic-years", middleware.RequireRoles(models.RoleAdmin))
@@ -165,6 +168,7 @@ func New(d Deps) *gin.Engine {
 	classes.GET("/:id", middleware.RequirePermission(models.PermClassesRead), classH.GetClass)
 	classes.GET("/:id/sections", middleware.RequirePermission(models.PermSectionsRead), classH.ClassSections)
 	classes.GET("/:id/subjects", middleware.RequirePermission(models.PermSubjectsRead), subjectH.ClassSubjects)
+	classes.GET("/:id/teacher-assignments", middleware.RequirePermission(models.PermTeacherAssignmentsRead), assignH.ClassTeachers)
 	classes.POST("", middleware.RequirePermission(models.PermClassesCreate), classH.CreateClass)
 	classes.PUT("/order", middleware.RequirePermission(models.PermClassesUpdate), classH.ReorderClasses)
 	classes.PUT("/:id", middleware.RequirePermission(models.PermClassesUpdate), classH.UpdateClass)
@@ -174,6 +178,7 @@ func New(d Deps) *gin.Engine {
 	sections := protected.Group("/sections", middleware.RequireRoles(models.RoleAdmin))
 	sections.GET("", middleware.RequirePermission(models.PermSectionsRead), classH.ListSections)
 	sections.GET("/:id", middleware.RequirePermission(models.PermSectionsRead), classH.GetSection)
+	sections.GET("/:id/teacher-assignments", middleware.RequirePermission(models.PermTeacherAssignmentsRead), assignH.SectionTeachers)
 	sections.POST("", middleware.RequirePermission(models.PermSectionsCreate), classH.CreateSection)
 	sections.PUT("/:id", middleware.RequirePermission(models.PermSectionsUpdate), classH.UpdateSection)
 	sections.PATCH("/:id/status", middleware.RequirePermission(models.PermSectionsUpdate), classH.SetSectionStatus)
@@ -217,6 +222,24 @@ func New(d Deps) *gin.Engine {
 	promotions.GET("/:id", middleware.RequirePermission(models.PermPromotionsRead), enrollH.GetPromotion)
 	promotions.POST("/preview", middleware.RequirePermission(models.PermPromotionsExecute), enrollH.PreviewPromotion)
 	promotions.POST("/execute", middleware.RequirePermission(models.PermPromotionsExecute), enrollH.ExecutePromotion)
+
+	// Teacher assignments: admin role AND the specific permission are both
+	// required. Changing the teacher and (de)activating use the update permission.
+	assignments := protected.Group("/teacher-assignments", middleware.RequireRoles(models.RoleAdmin))
+	assignments.GET("", middleware.RequirePermission(models.PermTeacherAssignmentsRead), assignH.ListAssignments)
+	assignments.GET("/stats", middleware.RequirePermission(models.PermTeacherAssignmentsRead), assignH.AssignmentStats)
+	assignments.GET("/:id", middleware.RequirePermission(models.PermTeacherAssignmentsRead), assignH.GetAssignment)
+	assignments.POST("", middleware.RequirePermission(models.PermTeacherAssignmentsCreate), assignH.CreateAssignment)
+	assignments.POST("/bulk", middleware.RequirePermission(models.PermTeacherAssignmentsCreate), assignH.BulkAssign)
+	assignments.PUT("/:id", middleware.RequirePermission(models.PermTeacherAssignmentsUpdate), assignH.UpdateAssignment)
+	assignments.PATCH("/:id/status", middleware.RequirePermission(models.PermTeacherAssignmentsUpdate), assignH.SetAssignmentStatus)
+	assignments.DELETE("/:id", middleware.RequirePermission(models.PermTeacherAssignmentsDelete), assignH.DeleteAssignment)
+
+	// Class-teacher views of the same assignments.
+	classTeachers := protected.Group("/class-teacher-assignments", middleware.RequireRoles(models.RoleAdmin))
+	classTeachers.GET("", middleware.RequirePermission(models.PermTeacherAssignmentsRead), assignH.ListClassTeachers)
+	classTeachers.POST("", middleware.RequirePermission(models.PermTeacherAssignmentsCreate), assignH.CreateClassTeacher)
+	classTeachers.PUT("/:id", middleware.RequirePermission(models.PermTeacherAssignmentsUpdate), assignH.UpdateAssignment)
 
 	return r
 }

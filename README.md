@@ -183,6 +183,28 @@ Admin-only enrollment of existing students (Feature 03) into a class and section
 - **Dashboard:** "Students per class" is real (students currently enrolled in each class of the current year), recent admissions show their current class and section, and Student Enrollment & Promotion is listed as implemented.
 - **Not included yet:** attendance, fees, examinations and the portals will reference `student_enrollments.id`.
 
+### Feature 09 — Teacher Assignment
+
+Admin-only assignment of existing teachers (Feature 04) to sections (Feature 06) of an academic year (Feature 05): as the **subject teacher** of a subject the class takes that year (Feature 07), or as the section's **class teacher**.
+
+- **Pages:**
+  - Teacher assignments (`/teacher-assignments`): real counts for the selected year (active assignments, assigned teachers, subject assignments, class teachers, subjects without a teacher, sections without a class teacher), filters (year, class, section, subject, teacher, type, status) and search by teacher name or ID or subject. Row actions: view, change teacher, deactivate/reactivate, remove (only assignments made by mistake).
+  - Assign subject teacher / Assign class teacher (dialogs): year → class → section (only that class's sections in that year) → subject (only subjects the class takes that year) → active teacher. Changing the year or class resets the dependent choices. The slot's current teacher is shown; replacing them needs an explicit confirmation.
+  - Bulk assignment (`/teacher-assignments/bulk`): one teacher, one subject, several sections of a class. The preview shows each section's outcome; sections with another teacher are left alone unless the admin ticks "Replace" for them. A report lists every section.
+  - Assignment details (`/teacher-assignments/:id`): the assignment and the full history of its slot (who held it, from when to when, and why it ended).
+  - Teacher profile: teaching assignments for the current year (class teacher of, subjects taught, counts) and previous assignments.
+  - Section details: the class teacher and each subject's teacher, with "Not assigned" where nobody teaches it. Class details: each section's class teacher and subject coverage.
+- **Data:** `teacher_assignments` with teacher, academic year, class, section, subject (subject teachers only), type (`subject_teacher` / `class_teacher`), status (`active` / `inactive`), assigned and ended dates, end note, the assignment it replaced, and remarks.
+- **Rules (enforced by the API and the database):**
+  - A composite foreign key guarantees the section belongs to the assignment's class and year; another guarantees a subject teacher's subject is one the class takes that year (`class_subjects`). Class-teacher rows have no subject (check constraint).
+  - Partial unique indexes allow one active teacher per subject in a section and one active class teacher per section. A teacher may teach several subjects and be class teacher of several sections.
+  - New assignments need an active teacher, class, section and subject, and the current or an upcoming year.
+  - Changing the teacher ends the current assignment (with a note) and creates a new one linked to it, so the history is kept. Deactivating keeps the row; reactivating needs the slot to be free. Only assignments made by mistake (active, open year, not part of a change) can be removed.
+  - Writes take a per-section advisory lock and share-lock the teacher, class, year, section and subject rows, so concurrent requests can't double-assign a slot.
+  - Teachers with assignments can't be deleted (`TEACHER_HAS_ASSIGNMENTS`), a section with assignments can't move to another class or year (`SECTION_HAS_TEACHER_ASSIGNMENTS`), and a class subject with teachers can't be removed.
+  - Assignment responses carry only the teacher's name, ID, designation, status and photo — never contact or salary details.
+- **Not included yet:** attendance, routines, examinations, marks and the teacher portal will reference `teacher_assignments.id`.
+
 ## Getting started
 
 ### 1. Database
@@ -322,6 +344,19 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | POST   | `/promotions/execute`   | Admin (`promotions:execute`) | Re-validate and apply in one transaction (`request_id` required; a repeat returns the same batch with `meta.replayed`) |
 | GET    | `/promotions`           | Admin (`promotions:read`) | Promotion batches, newest first (`academic_year_id`, `page`, `page_size`) |
 | GET    | `/promotions/:id`       | Admin (`promotions:read`) | A batch with every student's decision, outcome and placements |
+| GET    | `/teacher-assignments`  | Admin (`teacher_assignments:read`) | List: `academic_year_id`, `class_id`, `section_id`, `subject_id`, `teacher_id`, `type`, `status`, `search`, `page`, `page_size` |
+| GET    | `/teacher-assignments/stats` | Admin (`teacher_assignments:read`) | Counts for one year (`academic_year_id`, default: the current year) |
+| GET    | `/teacher-assignments/:id` | Admin (`teacher_assignments:read`) | Assignment details with the slot's `history` |
+| POST   | `/teacher-assignments`  | Admin (`teacher_assignments:create`) | Assign (`assignment_type`, `teacher_id`, `academic_year_id`, `class_id`, `section_id`, `subject_id`, `replace`, `remarks`) |
+| POST   | `/teacher-assignments/bulk` | Admin (`teacher_assignments:create`) | One teacher, one subject, several sections (`section_ids`, `replace_section_ids`, `dry_run`); per-section report |
+| PUT    | `/teacher-assignments/:id` | Admin (`teacher_assignments:update`) | Change the teacher (history kept) and/or remarks |
+| PATCH  | `/teacher-assignments/:id/status` | Admin (`teacher_assignments:update`) | Deactivate (`reason`) or reactivate |
+| DELETE | `/teacher-assignments/:id` | Admin (`teacher_assignments:delete`) | Remove an assignment made by mistake |
+| GET / POST | `/class-teacher-assignments` | Admin (`teacher_assignments:read` / `:create`) | Class-teacher assignments only (same fields, no subject) |
+| PUT    | `/class-teacher-assignments/:id` | Admin (`teacher_assignments:update`) | Change a class teacher (history kept) |
+| GET    | `/teachers/:id/assignments` | Admin (`teacher_assignments:read`) | A teacher's assignments, newest year first |
+| GET    | `/sections/:id/teacher-assignments` | Admin (`teacher_assignments:read`) | The section's class teacher and each subject's teacher (or null) |
+| GET    | `/classes/:id/teacher-assignments` | Admin (`teacher_assignments:read`) | The same for each section of the class (`academic_year_id`, default: current) |
 
 ## Project structure
 

@@ -58,6 +58,8 @@ export const teachersApi = {
     return api.put(`/teachers/${id}/photo`, form, { headers: { 'Content-Type': undefined } }).then(unwrap)
   },
   removePhoto: (id) => api.delete(`/teachers/${id}/photo`).then(unwrap),
+  /** The teacher's subject and class-teacher assignments, newest year first. */
+  assignments: (id) => api.get(`/teachers/${id}/assignments`).then(unwrap),
 }
 
 export const academicYearsApi = {
@@ -83,6 +85,8 @@ export const classesApi = {
   get: (id) => api.get(`/classes/${id}`).then(unwrap),
   /** Every section of the class, newest academic year first (optionally one year). */
   sections: (id, params) => api.get(`/classes/${id}/sections`, { params }).then(unwrap),
+  /** Class teacher and subject teachers of each section of the class in a year (default: current). */
+  teacherAssignments: (id, params) => api.get(`/classes/${id}/teacher-assignments`, { params }).then(unwrap),
   /** Every subject assignment of the class, newest academic year first (optionally one year). */
   subjects: (id, params) => api.get(`/classes/${id}/subjects`, { params }).then(unwrap),
   create: (payload) => api.post('/classes', payload).then(unwrap),
@@ -98,6 +102,8 @@ export const sectionsApi = {
   list: (params, { signal } = {}) =>
     api.get('/sections', { params, signal }).then((res) => ({ sections: res.data.data, meta: res.data.meta })),
   get: (id) => api.get(`/sections/${id}`).then(unwrap),
+  /** The section's class teacher and each subject's teacher ("assignment: null" = not assigned). */
+  teachers: (id) => api.get(`/sections/${id}/teacher-assignments`).then(unwrap),
   create: (payload) => api.post('/sections', payload).then(unwrap),
   update: (id, payload) => api.put(`/sections/${id}`, payload).then(unwrap),
   setStatus: (id, status) => api.patch(`/sections/${id}/status`, { status }).then(unwrap),
@@ -156,6 +162,23 @@ export const promotionsApi = {
   preview: (payload) => api.post('/promotions/preview', payload).then(unwrap),
   /** Resolves to `{ batch, replayed }`; `request_id` makes retries safe. */
   execute: (payload) => api.post('/promotions/execute', payload).then((res) => ({ batch: res.data.data, replayed: !!res.data.meta?.replayed })),
+}
+
+export const teacherAssignmentsApi = {
+  /** Resolves to `{ assignments, meta }`. */
+  list: (params, { signal } = {}) =>
+    api.get('/teacher-assignments', { params, signal }).then((res) => ({ assignments: res.data.data, meta: res.data.meta })),
+  stats: (params) => api.get('/teacher-assignments/stats', { params }).then(unwrap),
+  /** The assignment with `history` (every assignment of the same slot). */
+  get: (id) => api.get(`/teacher-assignments/${id}`).then(unwrap),
+  /** `assignment_type`: subject_teacher (with subject_id) or class_teacher; `replace: true` confirms replacing the current teacher. */
+  create: (payload) => api.post('/teacher-assignments', payload).then(unwrap),
+  /** Bulk report; `dry_run: true` previews, `replace_section_ids` resolves conflicts. */
+  bulk: (payload) => api.post('/teacher-assignments/bulk', payload).then(unwrap),
+  /** A different teacher_id changes the teacher (the old assignment is kept as history). */
+  update: (id, payload) => api.put(`/teacher-assignments/${id}`, payload).then(unwrap),
+  setStatus: (id, status, reason) => api.patch(`/teacher-assignments/${id}/status`, { status, reason }).then(unwrap),
+  remove: (id) => api.delete(`/teacher-assignments/${id}`).then(unwrap),
 }
 
 export const usersApi = {

@@ -22,6 +22,9 @@ const EnrollmentsPage = lazy(() => import('./pages/enrollments/EnrollmentsPage')
 const PromotionDetailPage = lazy(() => import('./pages/promotions/PromotionDetailPage'))
 const PromotionsPage = lazy(() => import('./pages/promotions/PromotionsPage'))
 const PromotionWizardPage = lazy(() => import('./pages/promotions/PromotionWizardPage'))
+const BulkAssignPage = lazy(() => import('./pages/teacher-assignments/BulkAssignPage'))
+const TeacherAssignmentDetailPage = lazy(() => import('./pages/teacher-assignments/TeacherAssignmentDetailPage'))
+const TeacherAssignmentsPage = lazy(() => import('./pages/teacher-assignments/TeacherAssignmentsPage'))
 const ClassSubjectsPage = lazy(() => import('./pages/subjects/ClassSubjectsPage'))
 const SubjectDetailPage = lazy(() => import('./pages/subjects/SubjectDetailPage'))
 const SubjectsPage = lazy(() => import('./pages/subjects/SubjectsPage'))
@@ -71,6 +74,13 @@ export default function App() {
                   <Route path="subjects" element={<SubjectsPage />} />
                   <Route path="subjects/:id" element={<SubjectDetailPage />} />
                   <Route path="class-subjects" element={<ClassSubjectsPage />} />
+                </Route>
+                <Route element={<RequireAccess permission={PERMISSIONS.TEACHER_ASSIGNMENTS_READ} roles={['admin']} />}>
+                  <Route path="teacher-assignments" element={<TeacherAssignmentsPage />} />
+                  <Route path="teacher-assignments/:id" element={<TeacherAssignmentDetailPage />} />
+                  <Route element={<RequireAccess permission={PERMISSIONS.TEACHER_ASSIGNMENTS_CREATE} />}>
+                    <Route path="teacher-assignments/bulk" element={<BulkAssignPage />} />
+                  </Route>
                 </Route>
                 <Route element={<RequireAccess permission={PERMISSIONS.ENROLLMENTS_READ} roles={['admin']} />}>
                   <Route path="enrollments" element={<EnrollmentsPage />} />

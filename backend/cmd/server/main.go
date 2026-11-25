@@ -66,13 +66,15 @@ func run() error {
 	dashboardSvc := service.NewDashboardService(repository.NewPostgresDashboardRepository(pool), cfg.Timezone)
 	studentRepo := repository.NewPostgresStudentRepository(pool)
 	studentSvc := service.NewStudentService(studentRepo, activityRepo, cfg.Timezone)
-	teacherSvc := service.NewTeacherService(repository.NewPostgresTeacherRepository(pool), activityRepo, cfg.Timezone, cfg.SalaryCurrency)
+	teacherRepo := repository.NewPostgresTeacherRepository(pool)
+	teacherSvc := service.NewTeacherService(teacherRepo, activityRepo, cfg.Timezone, cfg.SalaryCurrency)
 	academicYearSvc := service.NewAcademicYearService(repository.NewPostgresAcademicYearRepository(pool), activityRepo, cfg.Timezone)
 	classRepo := repository.NewPostgresClassRepository(pool)
 	classSvc := service.NewClassService(classRepo, activityRepo)
 	sectionSvc := service.NewSectionService(repository.NewPostgresSectionRepository(pool), classRepo, activityRepo)
 	subjectRepo := repository.NewPostgresSubjectRepository(pool)
 	subjectSvc := service.NewSubjectService(subjectRepo, activityRepo)
+	teacherAssignmentSvc := service.NewTeacherAssignmentService(repository.NewPostgresTeacherAssignmentRepository(pool), teacherRepo, classRepo, activityRepo)
 	enrollmentSvc := service.NewEnrollmentService(repository.NewPostgresEnrollmentRepository(pool), studentRepo, activityRepo)
 	promotionSvc := service.NewPromotionService(repository.NewPostgresPromotionRepository(pool), activityRepo)
 	classSubjectSvc := service.NewClassSubjectService(repository.NewPostgresClassSubjectRepository(pool), classRepo, subjectRepo, activityRepo)
@@ -90,6 +92,7 @@ func run() error {
 		ClassSubjectService: classSubjectSvc,
 		EnrollmentService:   enrollmentSvc,
 		PromotionService:    promotionSvc,
+		TeacherAssignments:  teacherAssignmentSvc,
 		Cookie:              handler.CookieConfig{Name: cfg.CookieName, Secure: cfg.CookieSecure, Domain: cfg.CookieDomain},
 		AllowedOrigins:      cfg.CORSAllowedOrigins,
 		LoginRateLimit:      cfg.LoginRateLimit,

@@ -272,6 +272,13 @@ func (r *PostgresSectionRepository) Update(ctx context.Context, id, actorID uuid
 			if enrolled > 0 {
 				return ErrSectionHasEnrollments
 			}
+			var assigned int
+			if err := tx.QueryRow(ctx, `SELECT count(*) FROM teacher_assignments WHERE section_id = $1`, id).Scan(&assigned); err != nil {
+				return err
+			}
+			if assigned > 0 {
+				return ErrSectionHasAssignments
+			}
 		}
 		if _, err := tx.Exec(ctx, `
 			UPDATE sections SET class_id = $2, academic_year_id = $3, name = $4, code = $5, room_number = $6,

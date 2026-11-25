@@ -87,6 +87,10 @@ export const PERMISSIONS = {
   ENROLLMENTS_DELETE: 'enrollments:delete',
   PROMOTIONS_READ: 'promotions:read',
   PROMOTIONS_EXECUTE: 'promotions:execute',
+  TEACHER_ASSIGNMENTS_READ: 'teacher_assignments:read',
+  TEACHER_ASSIGNMENTS_CREATE: 'teacher_assignments:create',
+  TEACHER_ASSIGNMENTS_UPDATE: 'teacher_assignments:update',
+  TEACHER_ASSIGNMENTS_DELETE: 'teacher_assignments:delete',
 }
 
 export const PERMISSION_LABELS = {

@@ -310,6 +310,10 @@ func (r *PostgresTeacherRepository) Delete(ctx context.Context, id uuid.UUID) (*
 		_, err = tx.Exec(ctx, `DELETE FROM teachers WHERE id = $1`, id)
 		return err
 	})
+	// Teachers with assignments (history) can't be deleted.
+	if isReferencedError(err) {
+		return nil, ErrTeacherHasAssignments
+	}
 	if err != nil {
 		return nil, mapTeacherError(err)
 	}

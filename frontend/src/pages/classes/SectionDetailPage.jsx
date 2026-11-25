@@ -6,6 +6,7 @@ import { sectionsApi } from '../../api/services'
 import { CurrentYearPill } from '../../components/academic-years/CurrentYearPill'
 import { YearStatusBadge } from '../../components/academic-years/YearStatusBadge'
 import { SectionFormModal } from '../../components/classes/SectionFormModal'
+import { SectionTeachersCard } from '../../components/teacher-assignments/SectionTeachersCard'
 import { useSectionActions } from '../../components/classes/useClassActions'
 import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
 import { Button } from '../../components/ui/Button'
@@ -172,6 +173,8 @@ export default function SectionDetailPage() {
           <DetailItem label="Last updated" value={`${formatDateTime(s.updated_at)}${s.updated_by?.name ? ` by ${s.updated_by.name}` : ''}`} />
         </DetailSection>
       </div>
+
+      {can(PERMISSIONS.TEACHER_ASSIGNMENTS_READ) && <SectionTeachersCard sectionId={s.id} />}
 
       <SectionFormModal open={editing} section={s} onClose={() => setEditing(false)} onSaved={load} />
       {actions.dialog}

@@ -61,6 +61,13 @@ const (
 	PermEnrollmentsDelete Permission = "enrollments:delete"
 	PermPromotionsRead    Permission = "promotions:read"
 	PermPromotionsExecute Permission = "promotions:execute"
+
+	// Teacher assignment update also covers changing the teacher and
+	// deactivating/reactivating assignments.
+	PermTeacherAssignmentsRead   Permission = "teacher_assignments:read"
+	PermTeacherAssignmentsCreate Permission = "teacher_assignments:create"
+	PermTeacherAssignmentsUpdate Permission = "teacher_assignments:update"
+	PermTeacherAssignmentsDelete Permission = "teacher_assignments:delete"
 )
 
 // selfService permissions are granted to every authenticated role.
@@ -107,6 +114,10 @@ var userAdministration = []Permission{
 	PermEnrollmentsDelete,
 	PermPromotionsRead,
 	PermPromotionsExecute,
+	PermTeacherAssignmentsRead,
+	PermTeacherAssignmentsCreate,
+	PermTeacherAssignmentsUpdate,
+	PermTeacherAssignmentsDelete,
 }
 
 // rolePermissions is the single source of truth for role-based access control.

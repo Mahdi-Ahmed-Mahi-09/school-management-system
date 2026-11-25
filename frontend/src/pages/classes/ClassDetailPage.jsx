@@ -9,6 +9,7 @@ import { ClassFormModal } from '../../components/classes/ClassFormModal'
 import { SectionFormModal } from '../../components/classes/SectionFormModal'
 import { useClassActions } from '../../components/classes/useClassActions'
 import { AssignSubjectsModal } from '../../components/subjects/AssignSubjectsModal'
+import { ClassTeachersCard } from '../../components/teacher-assignments/ClassTeachersCard'
 import { AssignmentTypeBadge } from '../../components/subjects/SubjectTypeBadge'
 import { Breadcrumbs } from '../../components/ui/Breadcrumbs'
 import { Button } from '../../components/ui/Button'
@@ -275,6 +276,8 @@ export default function ClassDetailPage() {
           )}
         </Card>
       )}
+
+      {can(PERMISSIONS.TEACHER_ASSIGNMENTS_READ) && <ClassTeachersCard classId={c.id} />}
 
       <ClassFormModal open={editing} classItem={c} onClose={() => setEditing(false)} onSaved={load} />
       <SectionFormModal open={addingSection} defaults={{ class_id: c.id }} onClose={() => setAddingSection(false)} onSaved={load} />

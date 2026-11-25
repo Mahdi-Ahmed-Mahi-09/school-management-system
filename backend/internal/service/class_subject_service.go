@@ -120,7 +120,7 @@ func mapClassSubjectRepoError(err error) error {
 		return apperror.Conflict("CLASS_SUBJECT_EXISTS", msg, map[string]string{"subjects": msg})
 	case errors.Is(err, repository.ErrClassSubjectInUse):
 		return apperror.Conflict("CLASS_SUBJECT_IN_USE",
-			"This subject assignment is used by other records (such as routines or exams), so it can't be removed.", nil)
+			"This subject assignment is used by other records (such as teacher assignments), so it can't be removed.", nil)
 	default:
 		return apperror.Internal(err)
 	}
