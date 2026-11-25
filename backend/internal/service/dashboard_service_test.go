@@ -98,7 +98,6 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 		module  *models.ModuleInfo
 		hasData bool
 	}{
-		"attendance":     {d.Attendance.Status, d.Attendance.Module, d.Attendance.Data != nil},
 		"fees":           {d.Fees.Status, d.Fees.Module, d.Fees.Data != nil},
 		"recent_notices": {d.RecentNotices.Status, d.RecentNotices.Module, d.RecentNotices.Data != nil},
 	}
@@ -106,6 +105,11 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 		if c.status != models.SectionUnavailable || c.module == nil || c.module.Name == "" || c.hasData {
 			t.Errorf("%s should be unavailable with a module and no data: %+v", name, c)
 		}
+	}
+
+	// Attendance exists since Feature 10: today's counts, dated today.
+	if a := d.Attendance; a.Status != models.SectionAvailable || a.Module != nil || a.Data == nil || a.Data.Date == "" || a.Data.Expected != 0 {
+		t.Errorf("attendance = %+v", a)
 	}
 
 	// Academic years exist as a module (Feature 05): with none current the
@@ -133,7 +137,7 @@ func TestAdminDashboardUsesRealCountsAndMarksMissingModules(t *testing.T) {
 	wantAvailable := map[string]bool{
 		models.ModuleUsers.Key: true, models.ModuleAcademicYears.Key: true, models.ModuleAcademic.Key: true,
 		models.ModuleSubjects.Key: true, models.ModuleStudents.Key: true, models.ModuleTeachers.Key: true,
-		models.ModuleEnrollment.Key: true,
+		models.ModuleEnrollment.Key: true, models.ModuleAttendance.Key: true,
 	}
 	for _, m := range d.Modules {
 		if m.Available != wantAvailable[m.Key] {

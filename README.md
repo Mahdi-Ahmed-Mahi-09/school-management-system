@@ -203,7 +203,30 @@ Admin-only assignment of existing teachers (Feature 04) to sections (Feature 06)
   - Writes take a per-section advisory lock and share-lock the teacher, class, year, section and subject rows, so concurrent requests can't double-assign a slot.
   - Teachers with assignments can't be deleted (`TEACHER_HAS_ASSIGNMENTS`), a section with assignments can't move to another class or year (`SECTION_HAS_TEACHER_ASSIGNMENTS`), and a class subject with teachers can't be removed.
   - Assignment responses carry only the teacher's name, ID, designation, status and photo — never contact or salary details.
-- **Not included yet:** attendance, routines, examinations, marks and the teacher portal will reference `teacher_assignments.id`.
+- **Not included yet:** routines, examinations, marks and the teacher portal will reference `teacher_assignments.id`. Attendance (Feature 10) uses assignments to decide which sections a teacher can take attendance for.
+
+### Feature 10 — Student Attendance
+
+Daily attendance of enrolled students (Feature 08), taken per section (Feature 06) and academic year (Feature 05) by administrators and by the teachers assigned to the section (Feature 09).
+
+- **Statuses:** `present`, `absent`, `late`, `leave` (shown as Present / Absent / Late / Leave), each with an optional remark. A student with no record for a day is **unmarked** — never counted as absent.
+- **Pages:**
+  - Attendance (`/attendance`): for a date, cards for enrolled students, present, absent, late, on leave and the attendance percentage (an empty state instead of zeros when nothing has been taken), a class-wise summary, and every section's state (complete, partly marked, not taken) with shortcuts.
+  - Take attendance (`/attendance/mark`): year → class → section → date, the roster from enrollments, a Present/Absent/Late/Leave control per student, optional remarks, "Mark all present" (an explicit action — nothing is pre-filled), "Mark selected absent", live counts, a warning before leaving with unsaved changes, and a review dialog before saving. A session can't be saved while a student is unmarked.
+  - Session details (`/attendance/session`): one section on one date, read-only, with who saved each record and CSV export.
+  - Attendance records (`/attendance/records`): filters (year, class, section, status, date, date range, roll number, student), search by student name or ID, pagination, and row actions (details, edit, student history).
+  - Record details (`/attendance/records/:id`): the record and its change history (old → new status and remarks, reason, who and when).
+  - Reports (`/attendance/reports`, admin): daily, monthly (per student), class-wise, date range (with a day-by-day breakdown) and per student; each exports CSV.
+  - Student profile: an Attendance card with recorded days, counts, percentage, recent days and a year selector. The admin dashboard's "Today's attendance" panel and the "Take attendance" quick action now use real data; teachers get "Take attendance" shortcuts on their dashboard.
+- **Percentage:** (present + late) ÷ (present + absent + late) × 100. Leave and unmarked days are excluded; with a zero denominator the result is N/A. No weekends or holidays are assumed — only recorded days count.
+- **Data:** `student_attendance` — enrollment, student, academic year, and the class, section and roll number at the time (a snapshot, so later section changes never rewrite history), date, status, remarks, version, marked by / updated by and timestamps. `student_attendance_changes` keeps every change after the first save (previous and new status and remarks, reason, who, when). Records are corrected in place and never deleted.
+- **Rules (enforced by the API and the database):**
+  - One record per student per day (unique on student + date and on enrollment + date). Composite foreign keys tie each record to its enrollment's student and year, and its section to its class and year; a trigger keeps the date inside the academic year; a check limits the status.
+  - New records only for students holding a place in the section (not withdrawn or transferred) who were enrolled on or before the date; never for future dates or outside the year; not in a completed year or an inactive class/section (saved records there can still be corrected).
+  - Teachers see and take attendance only for sections of their active assignments (class or subject teacher) through the teacher record linked to their login, and only for today. Administrators can take and correct any day; changing a saved record of an earlier day needs a reason.
+  - Saves lock the section and date and check each record's version, so a concurrent change is reported (`ATTENDANCE_CHANGED`) instead of being overwritten; resubmitting the same data changes nothing.
+  - Enrollments with attendance can't be deleted, an enrollment date can't move past recorded days, a section with attendance can't move to another class or year, and a year's dates can't shrink past recorded days.
+  - Student photos are only included for administrators; CSV cells that look like formulas are neutralised.
 
 ## Getting started
 
@@ -357,6 +380,22 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | GET    | `/teachers/:id/assignments` | Admin (`teacher_assignments:read`) | A teacher's assignments, newest year first |
 | GET    | `/sections/:id/teacher-assignments` | Admin (`teacher_assignments:read`) | The section's class teacher and each subject's teacher (or null) |
 | GET    | `/classes/:id/teacher-assignments` | Admin (`teacher_assignments:read`) | The same for each section of the class (`academic_year_id`, default: current) |
+| GET    | `/attendance/options`   | Admin, Teacher (`attendance:read`) | Years and the sections the caller can use (`academic_year_id`, default: current), `today`, scope |
+| GET    | `/attendance`           | Admin, Teacher (`attendance:read`) | Records: `academic_year_id`, `class_id`, `section_id`, `student_id`, `date`, `from`, `to`, `status`, `roll_number`, `search`, `page`, `page_size` (teachers: their sections) |
+| GET    | `/attendance/:id`       | Admin, Teacher (`attendance:read`) | A record with its change `history` and whether the caller may edit it |
+| GET    | `/attendance/session`   | Admin, Teacher (`attendance:read`) | A section's roster and attendance (`academic_year_id`, `section_id`, `date`) |
+| GET    | `/attendance/session/summary` | Admin, Teacher (`attendance:read`) | A date across sections: totals, per class, per section |
+| POST   | `/attendance`           | Admin, Teacher (`attendance:mark`) | One student, one day (`enrollment_id`, `date`, `status`, `remarks`) |
+| POST   | `/attendance/bulk`      | Admin, Teacher (`attendance:mark`) | Save a section for a date (`records[]` with `version`; `reason` for earlier days) in one transaction |
+| PUT    | `/attendance/:id`       | Admin, Teacher (`attendance:mark`) | Change status and remarks (`version`, `reason` for earlier days) |
+| PATCH  | `/attendance/:id/status` | Admin, Teacher (`attendance:mark`) | Change the status only |
+| GET    | `/attendance/reports/daily` | Admin (`attendance:reports`) | A date across sections; with `section_id`, every student |
+| GET    | `/attendance/reports/monthly` | Admin (`attendance:reports`) | Per-student counts for `month` (YYYY-MM) and `class_id` (and optional `section_id`) |
+| GET    | `/attendance/reports/class-wise` | Admin (`attendance:reports`) | Classes (or a class's sections) over `from`–`to`, with a daily breakdown |
+| GET    | `/attendance/reports/student-wise` | Admin (`attendance:reports`) | A student's year summary, months and records (`student_id`, `academic_year_id`) |
+| GET    | `/attendance/export`    | Admin (`attendance:export`) | CSV of `report` = daily, monthly, class-wise, student or records, with the same filters |
+| GET    | `/students/:id/attendance` | Admin (`attendance:read`) | A student's records |
+| GET    | `/students/:id/attendance/summary` | Admin (`attendance:read`) | A student's counts, months and recent days for a year |
 
 ## Project structure
 

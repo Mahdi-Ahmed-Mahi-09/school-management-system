@@ -50,6 +50,9 @@ type DashboardSnapshot struct {
 	// Students currently enrolled per class in the current academic year
 	// (Feature 08); empty when no year is current.
 	ClassDistribution []models.ClassDistributionItem
+
+	// Today's student attendance in the current academic year (Feature 10).
+	Attendance models.AttendanceSummary
 }
 
 // DashboardRepository reads aggregated dashboard data.

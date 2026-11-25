@@ -20,6 +20,18 @@ func TestRolePermissions(t *testing.T) {
 			}
 		}
 	}
+	for _, p := range teaching {
+		for _, role := range []Role{RoleAdmin, RoleTeacher} {
+			if !role.Can(p) {
+				t.Errorf("%s should have %s", role, p)
+			}
+		}
+		for _, role := range []Role{RoleStudent, RoleGuardian} {
+			if role.Can(p) {
+				t.Errorf("%s must not have %s", role, p)
+			}
+		}
+	}
 	if Role("superuser").Can(PermUsersRead) {
 		t.Error("unknown role must have no permissions")
 	}

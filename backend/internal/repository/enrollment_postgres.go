@@ -505,6 +505,14 @@ func (r *PostgresEnrollmentRepository) Update(ctx context.Context, id, targetSec
 		if err != nil {
 			return err
 		}
+		// Attendance already recorded must stay on or after the enrollment date.
+		var firstAttendance *time.Time
+		if err := tx.QueryRow(ctx, `SELECT min(attendance_date) FROM student_attendance WHERE enrollment_id = $1`, id).Scan(&firstAttendance); err != nil {
+			return err
+		}
+		if firstAttendance != nil && ch.EnrollmentDate.After(*firstAttendance) {
+			return ErrEnrollmentDateAfterAttendance
+		}
 		if _, err := tx.Exec(ctx, `
 			UPDATE student_enrollments SET section_id = $2, roll_number = $3, admission_type = $4, enrollment_date = $5,
 			       remarks = $6, updated_by = $7, updated_at = now()
@@ -561,6 +569,13 @@ func (r *PostgresEnrollmentRepository) Delete(ctx context.Context, id uuid.UUID,
 		}
 		if err := check(deleted); err != nil {
 			return err
+		}
+		var recorded bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM student_attendance WHERE enrollment_id = $1)`, id).Scan(&recorded); err != nil {
+			return err
+		}
+		if recorded {
+			return ErrEnrollmentHasAttendance
 		}
 		_, err = tx.Exec(ctx, `DELETE FROM student_enrollments WHERE id = $1`, id)
 		return err

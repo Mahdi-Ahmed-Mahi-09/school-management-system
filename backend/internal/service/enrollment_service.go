@@ -152,6 +152,12 @@ func mapEnrollmentRepoError(err error) error {
 		return apperror.Validation(map[string]string{"academic_year_id": "That academic year doesn't exist."})
 	case errors.Is(err, repository.ErrEnrollmentConflict):
 		return apperror.Conflict("ENROLLMENT_CONFLICT", "Another change to this section or student was saved at the same time. Nothing was saved; please try again.", nil)
+	case errors.Is(err, repository.ErrEnrollmentHasAttendance):
+		return apperror.Conflict("ENROLLMENT_HAS_ATTENDANCE",
+			"Attendance has been recorded for this enrollment, so it can't be deleted. Withdraw the student instead to keep their records.", nil)
+	case errors.Is(err, repository.ErrEnrollmentDateAfterAttendance):
+		msg := "Attendance is already recorded before this date. The enrollment date can't be later than the first recorded day."
+		return apperror.Conflict("ENROLLMENT_DATE_AFTER_ATTENDANCE", msg, map[string]string{"enrollment_date": msg})
 	case errors.Is(err, repository.ErrEnrollmentInUse):
 		return apperror.Conflict("ENROLLMENT_IN_USE", "This enrollment is part of a promotion record, so it can't be deleted.", nil)
 	default:

@@ -68,6 +68,15 @@ const (
 	PermTeacherAssignmentsCreate Permission = "teacher_assignments:create"
 	PermTeacherAssignmentsUpdate Permission = "teacher_assignments:update"
 	PermTeacherAssignmentsDelete Permission = "teacher_assignments:delete"
+
+	// Attendance: read and mark are scoped for teachers to the sections they
+	// are assigned to (Feature 09); correcting past days, reports and CSV
+	// export are school-wide administrative actions.
+	PermAttendanceRead    Permission = "attendance:read"
+	PermAttendanceMark    Permission = "attendance:mark"
+	PermAttendanceCorrect Permission = "attendance:correct"
+	PermAttendanceReports Permission = "attendance:reports"
+	PermAttendanceExport  Permission = "attendance:export"
 )
 
 // selfService permissions are granted to every authenticated role.
@@ -118,12 +127,18 @@ var userAdministration = []Permission{
 	PermTeacherAssignmentsCreate,
 	PermTeacherAssignmentsUpdate,
 	PermTeacherAssignmentsDelete,
+	PermAttendanceCorrect,
+	PermAttendanceReports,
+	PermAttendanceExport,
 }
+
+// teaching permissions let teachers take attendance for their own sections.
+var teaching = []Permission{PermAttendanceRead, PermAttendanceMark}
 
 // rolePermissions is the single source of truth for role-based access control.
 var rolePermissions = map[Role][]Permission{
-	RoleAdmin:    concat(selfService, userAdministration),
-	RoleTeacher:  concat(selfService),
+	RoleAdmin:    concat(selfService, teaching, userAdministration),
+	RoleTeacher:  concat(selfService, teaching),
 	RoleStudent:  concat(selfService),
 	RoleGuardian: concat(selfService),
 }

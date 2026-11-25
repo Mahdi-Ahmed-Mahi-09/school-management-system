@@ -118,6 +118,9 @@ func mapAcademicYearRepoError(err error) error {
 	case errors.Is(err, repository.ErrAcademicYearInUse):
 		return apperror.Conflict("ACADEMIC_YEAR_IN_USE",
 			"This academic year is used by other records (such as sections or subject assignments), so it can't be deleted.", nil)
+	case errors.Is(err, repository.ErrYearHasAttendanceOutside):
+		msg := "Attendance has been recorded on days outside these dates. Keep the dates covering every recorded day."
+		return apperror.Conflict("ATTENDANCE_OUTSIDE_DATES", msg, map[string]string{"start_date": msg, "end_date": msg})
 	case errors.Is(err, repository.ErrAnotherYearCurrent):
 		return apperror.Conflict("ACADEMIC_YEAR_CURRENT_CHANGED",
 			"Another academic year was made current at the same time. Refresh and try again.", nil)

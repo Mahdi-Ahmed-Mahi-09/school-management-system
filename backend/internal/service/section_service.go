@@ -84,6 +84,9 @@ func mapSectionRepoError(err error) error {
 	case errors.Is(err, repository.ErrSectionHasEnrollments):
 		return apperror.Conflict("SECTION_HAS_ENROLLMENTS",
 			"Students are enrolled in this section, so it can't be moved to another class or academic year.", nil)
+	case errors.Is(err, repository.ErrSectionHasAttendance):
+		return apperror.Conflict("SECTION_HAS_ATTENDANCE",
+			"Attendance has been recorded in this section, so it can't be moved to another class or academic year.", nil)
 	case errors.Is(err, repository.ErrSectionHasAssignments):
 		return apperror.Conflict("SECTION_HAS_TEACHER_ASSIGNMENTS",
 			"Teachers are assigned to this section, so it can't be moved to another class or academic year.", nil)

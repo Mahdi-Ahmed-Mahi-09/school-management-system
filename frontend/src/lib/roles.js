@@ -91,6 +91,11 @@ export const PERMISSIONS = {
   TEACHER_ASSIGNMENTS_CREATE: 'teacher_assignments:create',
   TEACHER_ASSIGNMENTS_UPDATE: 'teacher_assignments:update',
   TEACHER_ASSIGNMENTS_DELETE: 'teacher_assignments:delete',
+  ATTENDANCE_READ: 'attendance:read',
+  ATTENDANCE_MARK: 'attendance:mark',
+  ATTENDANCE_CORRECT: 'attendance:correct',
+  ATTENDANCE_REPORTS: 'attendance:reports',
+  ATTENDANCE_EXPORT: 'attendance:export',
 }
 
 export const PERMISSION_LABELS = {
@@ -126,4 +131,9 @@ export const PERMISSION_LABELS = {
   'sections:create': 'Add sections',
   'sections:update': 'Edit, activate and deactivate sections',
   'sections:delete': 'Delete unused sections',
+  'attendance:read': 'View student attendance of your sections',
+  'attendance:mark': "Take and update today's attendance for your sections",
+  'attendance:correct': 'Correct attendance of earlier days',
+  'attendance:reports': 'View attendance reports',
+  'attendance:export': 'Export attendance as CSV',
 }

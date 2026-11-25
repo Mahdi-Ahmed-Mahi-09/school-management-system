@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, BookUser, CalendarRange, ClipboardList, Sparkles, ChevronsUpDown, ListChecks, GraduationCap, LayoutGrid, Rows3, KeyRound, Presentation, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
+import { BarChart3, BookOpen, BookUser, CalendarCheck2, CalendarRange, ClipboardCheck, ClipboardList, History, Sparkles, ChevronsUpDown, ListChecks, GraduationCap, LayoutGrid, Rows3, KeyRound, Presentation, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
 import { Wordmark } from '../components/brand/Logo'
 import { Alert, Avatar } from '../components/ui/Display'
 import { Menu } from '../components/ui/Menu'
@@ -31,6 +31,15 @@ const NAV_SECTIONS = [
       { to: '/promotions', label: 'Promotions', icon: Sparkles, permission: PERMISSIONS.PROMOTIONS_READ },
       { to: '/teachers', label: 'Teachers', icon: Presentation, permission: PERMISSIONS.TEACHERS_READ },
       { to: '/teacher-assignments', label: 'Teacher assignments', icon: BookUser, permission: PERMISSIONS.TEACHER_ASSIGNMENTS_READ },
+    ],
+  },
+  {
+    label: 'Attendance',
+    items: [
+      { to: '/attendance', label: 'Attendance', icon: CalendarCheck2, permission: PERMISSIONS.ATTENDANCE_READ, end: true },
+      { to: '/attendance/mark', label: 'Take attendance', icon: ClipboardCheck, permission: PERMISSIONS.ATTENDANCE_MARK },
+      { to: '/attendance/records', label: 'Attendance records', icon: History, permission: PERMISSIONS.ATTENDANCE_READ },
+      { to: '/attendance/reports', label: 'Attendance reports', icon: BarChart3, permission: PERMISSIONS.ATTENDANCE_REPORTS },
     ],
   },
   {

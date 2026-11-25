@@ -256,6 +256,17 @@ func (r *PostgresAcademicYearRepository) Update(ctx context.Context, id, actorID
 		if err := checkOverlap(ctx, tx, y.StartDate, y.EndDate, &id); err != nil {
 			return err
 		}
+		// Recorded attendance must stay inside the year's dates.
+		var outside bool
+		if err := tx.QueryRow(ctx, `
+			SELECT EXISTS (SELECT 1 FROM student_attendance
+			               WHERE academic_year_id = $1 AND (attendance_date < $2::date OR attendance_date > $3::date))`,
+			id, dateArg(y.StartDate), dateArg(y.EndDate)).Scan(&outside); err != nil {
+			return err
+		}
+		if outside {
+			return ErrYearHasAttendanceOutside
+		}
 		if _, err := tx.Exec(ctx, `
 			UPDATE academic_years
 			SET name = $2, start_date = $3::date, end_date = $4::date, description = $5, updated_by = $6, updated_at = now()

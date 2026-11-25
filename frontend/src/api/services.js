@@ -40,6 +40,11 @@ export const studentsApi = {
   removePhoto: (id) => api.delete(`/students/${id}/photo`).then(unwrap),
   /** The student's enrollments, newest academic year first. */
   enrollmentHistory: (id) => api.get(`/students/${id}/enrollment-history`).then(unwrap),
+  /** Attendance records of the student; resolves to `{ records, meta }`. */
+  attendance: (id, params, { signal } = {}) =>
+    api.get(`/students/${id}/attendance`, { params, signal }).then((res) => ({ records: res.data.data, meta: res.data.meta })),
+  /** Counts for one academic year (default: current or latest), per month, and recent records. */
+  attendanceSummary: (id, params) => api.get(`/students/${id}/attendance/summary`, { params }).then(unwrap),
 }
 
 export const teachersApi = {
@@ -179,6 +184,37 @@ export const teacherAssignmentsApi = {
   update: (id, payload) => api.put(`/teacher-assignments/${id}`, payload).then(unwrap),
   setStatus: (id, status, reason) => api.patch(`/teacher-assignments/${id}/status`, { status, reason }).then(unwrap),
   remove: (id) => api.delete(`/teacher-assignments/${id}`).then(unwrap),
+}
+
+export const attendanceApi = {
+  /** Years and sections the caller can take attendance for (teachers: their assigned sections). */
+  options: (params) => api.get('/attendance/options', { params }).then(unwrap),
+  /** Resolves to `{ records, meta }`. */
+  list: (params, { signal } = {}) =>
+    api.get('/attendance', { params, signal }).then((res) => ({ records: res.data.data, meta: res.data.meta })),
+  /** A record with `history` (audited changes) and what the caller may do. */
+  get: (id) => api.get(`/attendance/${id}`).then(unwrap),
+  /** A section's roster and attendance for `{ academic_year_id, section_id, date }`. */
+  session: (params) => api.get('/attendance/session', { params }).then(unwrap),
+  /** A date across sections: totals, per class and per section. */
+  summary: (params, { signal } = {}) => api.get('/attendance/session/summary', { params, signal }).then(unwrap),
+  /** Saves a whole section for one date; resolves to `{ session, created, updated, unchanged }`. */
+  saveSession: (payload) => api.post('/attendance/bulk', payload).then(unwrap),
+  /** One student, one day. */
+  mark: (payload) => api.post('/attendance', payload).then(unwrap),
+  /** `{ status, remarks, reason, version }` — `version` guards against overwriting someone else's change. */
+  update: (id, payload) => api.put(`/attendance/${id}`, payload).then(unwrap),
+  setStatus: (id, payload) => api.patch(`/attendance/${id}/status`, payload).then(unwrap),
+  reports: {
+    daily: (params) => api.get('/attendance/reports/daily', { params }).then(unwrap),
+    monthly: (params) => api.get('/attendance/reports/monthly', { params }).then(unwrap),
+    classWise: (params) => api.get('/attendance/reports/class-wise', { params }).then(unwrap),
+    /** Resolves to `{ summary, records, meta }`. */
+    studentWise: (params) =>
+      api.get('/attendance/reports/student-wise', { params }).then((res) => ({ ...res.data.data, meta: res.data.meta })),
+  },
+  /** Downloads a CSV export (`report`: daily, monthly, class-wise, student or records). */
+  export: (params) => api.get('/attendance/export', { params, responseType: 'blob', timeout: 60000 }),
 }
 
 export const usersApi = {

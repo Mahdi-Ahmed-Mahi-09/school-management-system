@@ -37,6 +37,7 @@ type Deps struct {
 	EnrollmentService   *service.EnrollmentService
 	PromotionService    *service.PromotionService
 	TeacherAssignments  *service.TeacherAssignmentService
+	Attendance          *service.AttendanceService
 	Cookie              handler.CookieConfig
 	AllowedOrigins      []string
 	LoginRateLimit      int
@@ -76,6 +77,7 @@ func New(d Deps) *gin.Engine {
 	subjectH := handler.NewSubjectHandler(d.SubjectService, d.ClassSubjectService)
 	enrollH := handler.NewEnrollmentHandler(d.EnrollmentService, d.PromotionService)
 	assignH := handler.NewTeacherAssignmentHandler(d.TeacherAssignments)
+	attendanceH := handler.NewAttendanceHandler(d.Attendance)
 	loginLimiter := middleware.NewRateLimiter(d.LoginRateLimit, d.LoginRateWindow)
 
 	api := r.Group("/api/v1", middleware.CSRFGuard())
@@ -133,6 +135,8 @@ func New(d Deps) *gin.Engine {
 	students.DELETE("/:id/photo", middleware.RequirePermission(models.PermStudentsUpdate), studentH.RemovePhoto)
 	students.DELETE("/:id", middleware.RequirePermission(models.PermStudentsDelete), studentH.Delete)
 	students.GET("/:id/enrollment-history", middleware.RequirePermission(models.PermEnrollmentsRead), enrollH.StudentEnrollmentHistory)
+	students.GET("/:id/attendance", middleware.RequirePermission(models.PermAttendanceRead), attendanceH.StudentAttendance)
+	students.GET("/:id/attendance/summary", middleware.RequirePermission(models.PermAttendanceRead), attendanceH.StudentAttendanceSummary)
 
 	// Teacher management: admin role AND the specific permission are both required.
 	// Salary visibility is decided per field by the teachers:view_salary permission.
@@ -240,6 +244,27 @@ func New(d Deps) *gin.Engine {
 	classTeachers.GET("", middleware.RequirePermission(models.PermTeacherAssignmentsRead), assignH.ListClassTeachers)
 	classTeachers.POST("", middleware.RequirePermission(models.PermTeacherAssignmentsCreate), assignH.CreateClassTeacher)
 	classTeachers.PUT("/:id", middleware.RequirePermission(models.PermTeacherAssignmentsUpdate), assignH.UpdateAssignment)
+
+	// Attendance: admins and teachers. Teachers are further limited by the
+	// service to the sections of their active assignments, and to today.
+	attendance := protected.Group("/attendance", middleware.RequireRoles(models.RoleAdmin, models.RoleTeacher))
+	attendance.GET("/options", middleware.RequirePermission(models.PermAttendanceRead), attendanceH.Options)
+	attendance.GET("", middleware.RequirePermission(models.PermAttendanceRead), attendanceH.List)
+	attendance.GET("/session", middleware.RequirePermission(models.PermAttendanceRead), attendanceH.Session)
+	attendance.GET("/session/summary", middleware.RequirePermission(models.PermAttendanceRead), attendanceH.Summary)
+	attendance.GET("/:id", middleware.RequirePermission(models.PermAttendanceRead), attendanceH.Get)
+	attendance.POST("", middleware.RequirePermission(models.PermAttendanceMark), attendanceH.Mark)
+	attendance.POST("/bulk", middleware.RequirePermission(models.PermAttendanceMark), attendanceH.SaveSession)
+	attendance.PUT("/:id", middleware.RequirePermission(models.PermAttendanceMark), attendanceH.Update)
+	attendance.PATCH("/:id/status", middleware.RequirePermission(models.PermAttendanceMark), attendanceH.SetStatus)
+
+	// Reports and CSV export: admin role AND the specific permission.
+	attendanceAdmin := protected.Group("/attendance", middleware.RequireRoles(models.RoleAdmin))
+	attendanceAdmin.GET("/reports/daily", middleware.RequirePermission(models.PermAttendanceReports), attendanceH.DailyReport)
+	attendanceAdmin.GET("/reports/monthly", middleware.RequirePermission(models.PermAttendanceReports), attendanceH.MonthlyReport)
+	attendanceAdmin.GET("/reports/class-wise", middleware.RequirePermission(models.PermAttendanceReports), attendanceH.ClassWiseReport)
+	attendanceAdmin.GET("/reports/student-wise", middleware.RequirePermission(models.PermAttendanceReports), attendanceH.StudentWiseReport)
+	attendanceAdmin.GET("/export", middleware.RequirePermission(models.PermAttendanceExport), attendanceH.Export)
 
 	return r
 }

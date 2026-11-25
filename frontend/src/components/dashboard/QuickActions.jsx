@@ -19,7 +19,7 @@ const ACTIONS = [
   { label: 'Enroll students', icon: ClipboardList, module: 'enrollment', to: '/enrollments', permission: PERMISSIONS.ENROLLMENTS_READ },
   { label: 'Manage subjects', icon: BookOpen, module: 'subjects', to: '/subjects', permission: PERMISSIONS.SUBJECTS_READ },
   { label: 'Manage users', icon: Users, module: 'users', to: '/users', permission: PERMISSIONS.USERS_READ },
-  { label: 'Take attendance', icon: ClipboardCheck, module: 'attendance' },
+  { label: 'Take attendance', icon: ClipboardCheck, module: 'attendance', to: '/attendance/mark', permission: PERMISSIONS.ATTENDANCE_MARK },
   { label: 'Create examination', icon: FilePenLine, module: 'exams' },
   { label: 'Record payment', icon: Receipt, module: 'fees' },
   { label: 'Publish notice', icon: Megaphone, module: 'notices' },

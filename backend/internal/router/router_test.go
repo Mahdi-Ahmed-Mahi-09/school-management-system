@@ -65,10 +65,12 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 		PromotionService:  service.NewPromotionService(nil, activity),
 		// Likewise for teacher assignments.
 		TeacherAssignments: service.NewTeacherAssignmentService(nil, teacherRepo, classStore.Classes(), activity),
-		Cookie:             handler.CookieConfig{Name: cookieName},
-		AllowedOrigins:     []string{"http://localhost:5173"},
-		LoginRateLimit:     loginLimit,
-		LoginRateWindow:    time.Minute,
+		// Likewise for attendance (scope and records live in PostgreSQL).
+		Attendance:      service.NewAttendanceService(nil, activity, time.UTC),
+		Cookie:          handler.CookieConfig{Name: cookieName},
+		AllowedOrigins:  []string{"http://localhost:5173"},
+		LoginRateLimit:  loginLimit,
+		LoginRateWindow: time.Minute,
 	})}
 	for _, u := range []struct {
 		name string
@@ -460,9 +462,11 @@ func TestAdminDashboardAuthorization(t *testing.T) {
 	if classes["status"] != "available" || classes["data"].(map[string]any)["total"] != float64(0) {
 		t.Errorf("classes section: %v", classes)
 	}
+	// Attendance exists since Feature 10: today's real (here zero) counts.
 	attendance := data["attendance"].(map[string]any)
-	if attendance["status"] != "unavailable" || attendance["data"] != nil {
-		t.Errorf("attendance must be unavailable: %v", attendance)
+	attData, _ := attendance["data"].(map[string]any)
+	if attendance["status"] != "available" || attData["expected"] != float64(0) || attData["present"] != float64(0) || attData["date"] == "" {
+		t.Errorf("attendance section: %v", attendance)
 	}
 	activity := data["recent_activity"].(map[string]any)
 	items, _ := activity["data"].([]any)

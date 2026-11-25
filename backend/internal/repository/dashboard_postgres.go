@@ -136,6 +136,9 @@ func (r *PostgresDashboardRepository) AdminSnapshot(ctx context.Context, q Dashb
 		if err := classSnapshot(ctx, tx, snap); err != nil {
 			return err
 		}
+		if err := attendanceSnapshot(ctx, tx, q, snap); err != nil {
+			return err
+		}
 
 		// 3. Recent activity with the actor's current name (one join, no N+1).
 		rows, err = tx.Query(ctx, `
@@ -173,6 +176,24 @@ func (r *PostgresDashboardRepository) AdminSnapshot(ctx context.Context, q Dashb
 		return nil, err
 	}
 	return snap, nil
+}
+
+// attendanceSnapshot counts today's attendance in the current academic year:
+// students expected (holding a place, enrolled by today) and records per
+// status. Students without a record are pending, never counted as absent.
+func attendanceSnapshot(ctx context.Context, tx pgx.Tx, q DashboardQuery, snap *DashboardSnapshot) error {
+	snap.Attendance.Date = q.Today.Format(models.DateLayout)
+	year, err := currentYearRef(ctx, tx)
+	if err != nil || year == nil {
+		return err
+	}
+	return tx.QueryRow(ctx, `
+		SELECT (SELECT count(*) FROM student_enrollments e
+		        WHERE e.academic_year_id = $1 AND e.status NOT IN ('withdrawn', 'transferred') AND e.enrollment_date <= $2),
+		       count(*) FILTER (WHERE status = 'present'), count(*) FILTER (WHERE status = 'absent'),
+		       count(*) FILTER (WHERE status = 'late'), count(*) FILTER (WHERE status = 'leave')
+		FROM student_attendance WHERE academic_year_id = $1 AND attendance_date = $2`, year.ID, q.Today).
+		Scan(&snap.Attendance.Expected, &snap.Attendance.Present, &snap.Attendance.Absent, &snap.Attendance.Late, &snap.Attendance.Leave)
 }
 
 // studentSnapshot adds student metrics to the snapshot: totals, admissions

@@ -25,6 +25,7 @@ import { Card, EmptyState, ErrorState, StatusBadge } from '../../components/ui/D
 import { DetailItem, DetailSection, PhoneLink, ProfileSkeleton } from '../../components/ui/Sections'
 import { useAuth } from '../../hooks/useAuth'
 import { StudentEnrollmentCard } from '../../components/enrollments/StudentEnrollmentCard'
+import { StudentAttendanceCard } from '../../components/attendance/StudentAttendanceCard'
 import { PERMISSIONS } from '../../lib/roles'
 import { ageOn, formatDateOnly, genderLabel } from '../../lib/students'
 import { formatDateTime } from '../../lib/utils'
@@ -184,6 +185,8 @@ export default function StudentProfilePage() {
       </div>
 
       {can(PERMISSIONS.ENROLLMENTS_READ) && <StudentEnrollmentCard student={s} />}
+
+      {can(PERMISSIONS.ATTENDANCE_READ) && <StudentAttendanceCard student={s} />}
 
       <DeleteStudentDialog
         student={s}

@@ -25,6 +25,12 @@ const PromotionWizardPage = lazy(() => import('./pages/promotions/PromotionWizar
 const BulkAssignPage = lazy(() => import('./pages/teacher-assignments/BulkAssignPage'))
 const TeacherAssignmentDetailPage = lazy(() => import('./pages/teacher-assignments/TeacherAssignmentDetailPage'))
 const TeacherAssignmentsPage = lazy(() => import('./pages/teacher-assignments/TeacherAssignmentsPage'))
+const AttendanceDashboardPage = lazy(() => import('./pages/attendance/AttendanceDashboardPage'))
+const AttendanceRecordPage = lazy(() => import('./pages/attendance/AttendanceRecordPage'))
+const AttendanceRecordsPage = lazy(() => import('./pages/attendance/AttendanceRecordsPage'))
+const AttendanceReportsPage = lazy(() => import('./pages/attendance/AttendanceReportsPage'))
+const AttendanceSessionPage = lazy(() => import('./pages/attendance/AttendanceSessionPage'))
+const MarkAttendancePage = lazy(() => import('./pages/attendance/MarkAttendancePage'))
 const ClassSubjectsPage = lazy(() => import('./pages/subjects/ClassSubjectsPage'))
 const SubjectDetailPage = lazy(() => import('./pages/subjects/SubjectDetailPage'))
 const SubjectsPage = lazy(() => import('./pages/subjects/SubjectsPage'))
@@ -80,6 +86,19 @@ export default function App() {
                   <Route path="teacher-assignments/:id" element={<TeacherAssignmentDetailPage />} />
                   <Route element={<RequireAccess permission={PERMISSIONS.TEACHER_ASSIGNMENTS_CREATE} />}>
                     <Route path="teacher-assignments/bulk" element={<BulkAssignPage />} />
+                  </Route>
+                </Route>
+                {/* Attendance: admins and teachers (the API limits teachers to their sections). */}
+                <Route element={<RequireAccess permission={PERMISSIONS.ATTENDANCE_READ} roles={['admin', 'teacher']} />}>
+                  <Route path="attendance" element={<AttendanceDashboardPage />} />
+                  <Route path="attendance/session" element={<AttendanceSessionPage />} />
+                  <Route path="attendance/records" element={<AttendanceRecordsPage />} />
+                  <Route path="attendance/records/:id" element={<AttendanceRecordPage />} />
+                  <Route element={<RequireAccess permission={PERMISSIONS.ATTENDANCE_MARK} />}>
+                    <Route path="attendance/mark" element={<MarkAttendancePage />} />
+                  </Route>
+                  <Route element={<RequireAccess permission={PERMISSIONS.ATTENDANCE_REPORTS} roles={['admin']} />}>
+                    <Route path="attendance/reports" element={<AttendanceReportsPage />} />
                   </Route>
                 </Route>
                 <Route element={<RequireAccess permission={PERMISSIONS.ENROLLMENTS_READ} roles={['admin']} />}>

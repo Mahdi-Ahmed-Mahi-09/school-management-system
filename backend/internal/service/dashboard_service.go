@@ -26,7 +26,7 @@ var implementedModules = map[string]bool{
 	models.ModuleEnrollment.Key:    true, // Feature 08
 	models.ModuleStudents.Key:      true, // Feature 03
 	models.ModuleTeachers.Key:      true, // Feature 04
-	models.ModuleAttendance.Key:    false,
+	models.ModuleAttendance.Key:    true, // Feature 10
 	models.ModuleFees.Key:          false,
 	models.ModuleExams.Key:         false,
 	models.ModuleNotices.Key:       false,
@@ -130,7 +130,8 @@ func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDas
 			// (Feature 08); empty when no year is current.
 			ClassDistribution: models.Available(classDistribution(snap.ClassDistribution)),
 		},
-		Attendance:       models.Unavailable[models.AttendanceSummary](models.ModuleAttendance),
+		// Today's attendance in the current academic year (Feature 10).
+		Attendance:       models.Available(attendanceToday(snap.Attendance, today)),
 		Fees:             models.Unavailable[models.FeeSummary](models.ModuleFees),
 		RecentAdmissions: models.Available(snap.RecentAdmissions),
 		RecentNotices:    models.Unavailable[[]models.Notice](models.ModuleNotices),
@@ -150,4 +151,10 @@ func academicYearSection(current *models.AcademicYear, today time.Time) models.S
 		return models.Section[models.AcademicYearSummary]{Status: models.SectionAvailable}
 	}
 	return models.Available(current.Summary(today))
+}
+
+// attendanceToday dates the attendance summary with the school's today.
+func attendanceToday(a models.AttendanceSummary, today time.Time) models.AttendanceSummary {
+	a.Date = today.Format(models.DateLayout)
+	return a
 }

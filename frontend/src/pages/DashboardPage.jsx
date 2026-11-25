@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, CalendarClock, Check, KeyRound, ShieldCheck, UserRound } from 'lucide-react'
+import { ArrowUpRight, CalendarCheck2, CalendarClock, Check, ClipboardCheck, KeyRound, ShieldCheck, UserRound } from 'lucide-react'
 import { DashboardSkeleton } from '../components/dashboard/DashboardSkeleton'
 import { Card, CardHeader, PageHeader, RoleBadge, StatusBadge } from '../components/ui/Display'
 import { useAuth } from '../hooks/useAuth'
@@ -69,7 +69,7 @@ function MemberOverview({ user, permissions }) {
 }
 
 function MemberDashboard() {
-  const { user, permissions } = useAuth()
+  const { user, permissions, can } = useAuth()
   const RoleIcon = ROLE_META[user.role]?.icon ?? ShieldCheck
 
   return (
@@ -84,6 +84,13 @@ function MemberDashboard() {
         title={`${greeting()}, ${user.first_name}`}
         description="Welcome to Classora. Keep your profile up to date so your school can reach you."
       />
+
+      {can(PERMISSIONS.ATTENDANCE_MARK) && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <QuickLink to="/attendance/mark" icon={ClipboardCheck} title="Take attendance" description="Mark today's attendance for your sections" />
+          <QuickLink to="/attendance" icon={CalendarCheck2} title="My sections today" description="See which sections are done and which are pending" />
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <QuickLink to="/profile" icon={UserRound} title="Edit your profile" description="Update your name and contact details" />

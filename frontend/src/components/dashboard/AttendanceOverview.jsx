@@ -16,8 +16,9 @@ const CATEGORIES = [
 export function AttendanceOverview({ section, className }) {
   const data = section?.data
   const recorded = data ? CATEGORIES.reduce((sum, c) => sum + (data[c.key] ?? 0), 0) : 0
-  // Late students are present in school, so they count towards attendance.
-  const rate = data ? percent(data.present + data.late, data.expected) : null
+  // (present + late) / (present + absent + late): leave and unmarked students
+  // are excluded, so the rate never treats a missing record as an absence.
+  const rate = data ? percent(data.present + data.late, data.present + data.absent + data.late) : null
 
   return (
     <Panel icon={CalendarCheck2} title="Today's attendance" description="Student attendance recorded today." className={className}>
@@ -37,7 +38,7 @@ export function AttendanceOverview({ section, className }) {
       ) : (
         <div className="space-y-5">
           <div className="flex items-center gap-5">
-            <div className="relative size-32 shrink-0" role="img" aria-label={`Attendance rate ${rate ?? 0}%`}>
+            <div className="relative size-32 shrink-0" role="img" aria-label={rate == null ? 'Attendance rate not available' : `Attendance rate ${rate}%`}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -56,7 +57,7 @@ export function AttendanceOverview({ section, className }) {
                 </PieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-semibold text-slate-900 tabular-nums">{rate ?? 0}%</span>
+                <span className="text-xl font-semibold text-slate-900 tabular-nums">{rate == null ? 'N/A' : `${rate}%`}</span>
                 <span className="text-[11px] text-slate-500">attendance</span>
               </div>
             </div>
@@ -64,7 +65,7 @@ export function AttendanceOverview({ section, className }) {
               <p className="text-[13px] text-slate-500">Expected today</p>
               <p className="text-2xl font-semibold text-slate-900 tabular-nums">{formatNumber(data.expected)}</p>
               <p className="mt-1 text-xs text-slate-500">
-                {formatNumber(recorded)} recorded · {formatNumber(Math.max(data.expected - recorded, 0))} pending
+                {formatNumber(recorded)} recorded · {formatNumber(Math.max(data.expected - recorded, 0))} unmarked
               </p>
             </div>
           </div>
