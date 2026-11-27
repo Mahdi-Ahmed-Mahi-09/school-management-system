@@ -5,6 +5,7 @@ import { AcademicOverview } from '../../components/dashboard/AcademicOverview'
 import { AccountGrowthChart, AccountsByRoleChart } from '../../components/dashboard/AccountCharts'
 import { AttendanceOverview } from '../../components/dashboard/AttendanceOverview'
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader'
+import { ExamOverview } from '../../components/dashboard/ExamOverview'
 import { DashboardSkeleton } from '../../components/dashboard/DashboardSkeleton'
 import { FeeCollection } from '../../components/dashboard/FeeCollection'
 import { KpiCards } from '../../components/dashboard/KpiCards'
@@ -93,8 +94,12 @@ export default function AdminDashboardPage() {
             <QuickActions modules={data.modules} />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-            <RecentActivity section={data.recent_activity} className="lg:col-span-2 xl:col-span-1" />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ExamOverview section={data.examinations} />
+            <RecentActivity section={data.recent_activity} />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
             <RecentAdmissions section={data.recent_admissions} />
             <RecentNotices section={data.recent_notices} />
           </div>

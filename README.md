@@ -228,6 +228,29 @@ Daily attendance of enrolled students (Feature 08), taken per section (Feature 0
   - Enrollments with attendance can't be deleted, an enrollment date can't move past recorded days, a section with attendance can't move to another class or year, and a year's dates can't shrink past recorded days.
   - Student photos are only included for administrators; CSV cells that look like formulas are neutralised.
 
+### Feature 11 — Examination Management
+
+Examinations of an academic year (Feature 05) for one or more classes (Feature 06), with a subject-wise timetable per class built from the subjects each class takes that year (Feature 07). Marks, grades and results are Feature 12 and are not part of this feature.
+
+- **Examination types:** a predefined list (Class Test, Monthly Test, First Term, Half-Yearly, Second Term, Annual, Model Test, Test, Pre-Test, Selection Examination) plus custom types. Predefined types can be deactivated but not renamed or deleted; unused custom types can be deleted.
+- **Pages:**
+  - Examinations (`/examinations`): counts for the year (total, published, upcoming, completed, drafts), filters (academic year or all years for history, type, status, class, date range), search, pagination and row actions (details, timetable, edit, manage schedule, publish, complete, cancel, delete draft). Examination types are managed from here.
+  - Create / edit (`/examinations/new`, `/examinations/:id/edit`): type, academic year, name (suggested from type and year), dates within the year, description, instructions and the classes (active classes only; selected classes shown as removable chips).
+  - Details (`/examinations/:id`): information, record (created, updated, published, completed, cancelled), each class with its sections, enrolled students and timetable, adding/removing classes while a draft, and the full history.
+  - Schedule builder (`/examinations/:id/schedule`): one tab per class and one row per subject the class takes that year; tick the subjects included and set date, start and end time, room and instructions inline. "Apply to included" sets one time for all papers. Overlaps are shown before saving; server conflicts (another class in the same room, the same class in another examination) are shown on the paper. Unsaved changes are protected.
+  - Timetable (`/examinations/:id/timetable`): per-class tables or a day-by-day view, filters by class and date, CSV download and a print layout without navigation or buttons, headed with the examination, type, year and dates.
+  - Exam timetables (`/exam-timetables`): published and past timetables. Teachers see only the classes they are assigned to (Feature 09), read-only, with the papers of their own subjects highlighted.
+  - Admin dashboard: an Examinations panel (published this year, upcoming and recently created) and a working "Create examination" quick action.
+- **Data:** `exam_types`; `examinations` (name, type, academic year, dates, description, instructions, status, published/completed/cancelled stamps and the cancellation reason); `examination_classes` (an examination's classes); `examination_schedules` (one paper: class, subject, date, start/end time, room, instructions, version). Schedules are class-level — every section of the class sits the same timetable — and are what Feature 12 will attach marks to.
+- **Rules (enforced by the API and the database):**
+  - Names are unique within an academic year; dates must lie within the year (trigger) and start on or before the end; completed years can't get examinations.
+  - Composite foreign keys tie each class to the examination's year and each paper to a subject the class takes that year (`class_subjects`); one paper per subject per class; start before end; a paper's date within the examination (trigger).
+  - An exclusion constraint (btree_gist) stops two papers of one class overlapping. The service also rejects overlaps with the same class in another (non-cancelled) examination and with a room already used at that time.
+  - Status flow: draft → published → completed, and draft/published → cancelled (with a reason). Publishing runs a check — at least one class, every class scheduled, active classes and subjects, no conflicts — and shows issues and warnings (e.g. compulsory subjects without a paper). Completing needs the last day to have come.
+  - Drafts can be freely edited and deleted. Published timetables can change only with a reason (recorded with before/after in the history); papers and classes can't be removed and the examination can't be deleted. Completed and cancelled examinations are read-only history.
+  - Writes lock the examination and the academic year's examination schedule; papers carry a version, so a concurrent change is reported (`EXAM_CHANGED`) instead of overwritten.
+  - Classes, class subjects and subjects used by examinations can't be removed, and an academic year's dates can't shrink past its examinations. Enrollment and attendance data are never changed.
+
 ## Getting started
 
 ### 1. Database
@@ -396,6 +419,25 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | GET    | `/attendance/export`    | Admin (`attendance:export`) | CSV of `report` = daily, monthly, class-wise, student or records, with the same filters |
 | GET    | `/students/:id/attendance` | Admin (`attendance:read`) | A student's records |
 | GET    | `/students/:id/attendance/summary` | Admin (`attendance:read`) | A student's counts, months and recent days for a year |
+| GET    | `/exam-types`           | Admin (`examinations:read`) | Predefined and custom examination types with usage counts |
+| POST / PUT / DELETE | `/exam-types[/:id]` | Admin (`examinations:create` / `:update` / `:delete`) | Add a custom type, rename or (de)activate, delete an unused custom type |
+| GET    | `/examinations`         | Admin (`examinations:read`) | List: `academic_year_id`, `exam_type_id`, `status`, `class_id`, `from`, `to`, `search`, `page`, `page_size` |
+| GET    | `/examinations/statistics` | Admin (`examinations:read`) | Counts for one year (default: current) |
+| GET    | `/examinations/:id`     | Admin (`examinations:read`) | Details with `classes` (sections, students, subjects, schedule) |
+| GET    | `/examinations/:id/classes`, `/examinations/:id/schedules` | Admin (`examinations:read`) | Classes with subjects and papers (`class_id` to narrow) |
+| GET    | `/examinations/:id/history` | Admin (`examinations:read`) | Audit trail |
+| POST   | `/examinations`         | Admin (`examinations:create`) | Create (`name`, `exam_type_id`, `academic_year_id`, `start_date`, `end_date`, `description`, `instructions`, `class_ids`) |
+| PUT    | `/examinations/:id`     | Admin (`examinations:update`) | Edit details (`reason` required once published) |
+| DELETE | `/examinations/:id`     | Admin (`examinations:delete`) | Delete a draft |
+| POST   | `/examinations/:id/classes` | Admin (`examinations:update`) | Add classes (drafts) |
+| DELETE | `/examinations/:id/classes/:classId` | Admin (`examinations:update`) | Remove a class and its papers (drafts) |
+| POST   | `/examinations/:id/schedules` | Admin (`examinations:update`) | Add papers for a class (`class_id`, `items[]`) |
+| PUT    | `/examinations/:id/classes/:classId/schedules` | Admin (`examinations:update`) | Save a class's whole schedule (`items[]` with `id`/`version` for existing papers; unlisted papers are removed in drafts) |
+| PUT / DELETE | `/examination-schedules/:id` | Admin (`examinations:update`) | Change one paper (`version`, `reason` once published) / remove a draft paper |
+| GET    | `/examinations/:id/publish-check` | Admin (`examinations:publish`) | `{ ready, issues, warnings, classes, papers }` |
+| PATCH  | `/examinations/:id/publish`, `/complete`, `/cancel` | Admin (`examinations:publish`) | Status transitions (`reason` to cancel) |
+| GET    | `/exam-timetables`      | Admin, Teacher (`exam_timetables:read`) | Non-draft examinations the caller can see (teachers: their classes) |
+| GET    | `/examinations/:id/timetable`, `/examinations/:id/classes/:classId/timetable` | Admin, Teacher (`exam_timetables:read`) | Timetable (`class_id`, `date`); teachers: published/past, their classes, own papers marked |
 
 ## Project structure
 

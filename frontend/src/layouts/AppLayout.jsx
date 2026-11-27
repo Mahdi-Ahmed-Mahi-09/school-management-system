@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, BookOpen, BookUser, CalendarCheck2, CalendarRange, ClipboardCheck, ClipboardList, History, Sparkles, ChevronsUpDown, ListChecks, GraduationCap, LayoutGrid, Rows3, KeyRound, Presentation, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
+import { BarChart3, CalendarClock, FilePenLine, BookOpen, BookUser, CalendarCheck2, CalendarRange, ClipboardCheck, ClipboardList, History, Sparkles, ChevronsUpDown, ListChecks, GraduationCap, LayoutGrid, Rows3, KeyRound, Presentation, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
 import { Wordmark } from '../components/brand/Logo'
 import { Alert, Avatar } from '../components/ui/Display'
 import { Menu } from '../components/ui/Menu'
@@ -40,6 +40,13 @@ const NAV_SECTIONS = [
       { to: '/attendance/mark', label: 'Take attendance', icon: ClipboardCheck, permission: PERMISSIONS.ATTENDANCE_MARK },
       { to: '/attendance/records', label: 'Attendance records', icon: History, permission: PERMISSIONS.ATTENDANCE_READ },
       { to: '/attendance/reports', label: 'Attendance reports', icon: BarChart3, permission: PERMISSIONS.ATTENDANCE_REPORTS },
+    ],
+  },
+  {
+    label: 'Examinations',
+    items: [
+      { to: '/examinations', label: 'Examinations', icon: FilePenLine, permission: PERMISSIONS.EXAMS_READ },
+      { to: '/exam-timetables', label: 'Exam timetables', icon: CalendarClock, permission: PERMISSIONS.EXAM_TIMETABLES_READ },
     ],
   },
   {
@@ -172,7 +179,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-svh">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-200/80 bg-white lg:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-200/80 bg-white lg:block print:!hidden">
         <SidebarContent />
       </aside>
 
@@ -193,8 +200,8 @@ export default function AppLayout() {
         </div>
       )}
 
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur lg:hidden">
+      <div className="lg:pl-64 print:!pl-0">
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur lg:hidden print:hidden">
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
@@ -209,7 +216,7 @@ export default function AppLayout() {
           </Link>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10 print:max-w-none print:p-0">
           {user.must_change_password && !onSecurityTab && (
             <Alert
               tone="warning"

@@ -121,6 +121,9 @@ func mapAcademicYearRepoError(err error) error {
 	case errors.Is(err, repository.ErrYearHasAttendanceOutside):
 		msg := "Attendance has been recorded on days outside these dates. Keep the dates covering every recorded day."
 		return apperror.Conflict("ATTENDANCE_OUTSIDE_DATES", msg, map[string]string{"start_date": msg, "end_date": msg})
+	case errors.Is(err, repository.ErrYearHasExamsOutside):
+		msg := "Examinations are scheduled outside these dates. Keep the dates covering every examination."
+		return apperror.Conflict("EXAMS_OUTSIDE_DATES", msg, map[string]string{"start_date": msg, "end_date": msg})
 	case errors.Is(err, repository.ErrAnotherYearCurrent):
 		return apperror.Conflict("ACADEMIC_YEAR_CURRENT_CHANGED",
 			"Another academic year was made current at the same time. Refresh and try again.", nil)

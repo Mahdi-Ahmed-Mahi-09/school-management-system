@@ -77,6 +77,17 @@ const (
 	PermAttendanceCorrect Permission = "attendance:correct"
 	PermAttendanceReports Permission = "attendance:reports"
 	PermAttendanceExport  Permission = "attendance:export"
+
+	// Examinations: managed by administrators. Update also covers classes and
+	// schedules; publish covers publishing, completing and cancelling.
+	// Timetables of published examinations are readable by teachers, limited
+	// to the classes they are assigned to (Feature 09).
+	PermExamsRead          Permission = "examinations:read"
+	PermExamsCreate        Permission = "examinations:create"
+	PermExamsUpdate        Permission = "examinations:update"
+	PermExamsDelete        Permission = "examinations:delete"
+	PermExamsPublish       Permission = "examinations:publish"
+	PermExamTimetablesRead Permission = "exam_timetables:read"
 )
 
 // selfService permissions are granted to every authenticated role.
@@ -130,10 +141,15 @@ var userAdministration = []Permission{
 	PermAttendanceCorrect,
 	PermAttendanceReports,
 	PermAttendanceExport,
+	PermExamsRead,
+	PermExamsCreate,
+	PermExamsUpdate,
+	PermExamsDelete,
+	PermExamsPublish,
 }
 
 // teaching permissions let teachers take attendance for their own sections.
-var teaching = []Permission{PermAttendanceRead, PermAttendanceMark}
+var teaching = []Permission{PermAttendanceRead, PermAttendanceMark, PermExamTimetablesRead}
 
 // rolePermissions is the single source of truth for role-based access control.
 var rolePermissions = map[Role][]Permission{

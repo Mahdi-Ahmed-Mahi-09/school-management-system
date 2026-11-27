@@ -31,6 +31,12 @@ const AttendanceRecordsPage = lazy(() => import('./pages/attendance/AttendanceRe
 const AttendanceReportsPage = lazy(() => import('./pages/attendance/AttendanceReportsPage'))
 const AttendanceSessionPage = lazy(() => import('./pages/attendance/AttendanceSessionPage'))
 const MarkAttendancePage = lazy(() => import('./pages/attendance/MarkAttendancePage'))
+const ExamFormPage = lazy(() => import('./pages/examinations/ExamFormPage'))
+const ExaminationDetailPage = lazy(() => import('./pages/examinations/ExaminationDetailPage'))
+const ExaminationsPage = lazy(() => import('./pages/examinations/ExaminationsPage'))
+const ExamTimetablePage = lazy(() => import('./pages/examinations/ExamTimetablePage'))
+const ExamTimetablesPage = lazy(() => import('./pages/examinations/ExamTimetablesPage'))
+const ScheduleBuilderPage = lazy(() => import('./pages/examinations/ScheduleBuilderPage'))
 const ClassSubjectsPage = lazy(() => import('./pages/subjects/ClassSubjectsPage'))
 const SubjectDetailPage = lazy(() => import('./pages/subjects/SubjectDetailPage'))
 const SubjectsPage = lazy(() => import('./pages/subjects/SubjectsPage'))
@@ -87,6 +93,22 @@ export default function App() {
                   <Route element={<RequireAccess permission={PERMISSIONS.TEACHER_ASSIGNMENTS_CREATE} />}>
                     <Route path="teacher-assignments/bulk" element={<BulkAssignPage />} />
                   </Route>
+                </Route>
+                {/* Examinations: managed by admins; timetables are read-only for teachers of the classes. */}
+                <Route element={<RequireAccess permission={PERMISSIONS.EXAMS_READ} roles={['admin']} />}>
+                  <Route path="examinations" element={<ExaminationsPage />} />
+                  <Route path="examinations/:id" element={<ExaminationDetailPage />} />
+                  <Route element={<RequireAccess permission={PERMISSIONS.EXAMS_CREATE} />}>
+                    <Route path="examinations/new" element={<ExamFormPage />} />
+                  </Route>
+                  <Route element={<RequireAccess permission={PERMISSIONS.EXAMS_UPDATE} />}>
+                    <Route path="examinations/:id/edit" element={<ExamFormPage />} />
+                    <Route path="examinations/:id/schedule" element={<ScheduleBuilderPage />} />
+                  </Route>
+                </Route>
+                <Route element={<RequireAccess permission={PERMISSIONS.EXAM_TIMETABLES_READ} roles={['admin', 'teacher']} />}>
+                  <Route path="exam-timetables" element={<ExamTimetablesPage />} />
+                  <Route path="examinations/:id/timetable" element={<ExamTimetablePage />} />
                 </Route>
                 {/* Attendance: admins and teachers (the API limits teachers to their sections). */}
                 <Route element={<RequireAccess permission={PERMISSIONS.ATTENDANCE_READ} roles={['admin', 'teacher']} />}>

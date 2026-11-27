@@ -47,7 +47,7 @@ var (
 	ModuleFees = ModuleInfo{Key: "fees", Name: "Fee Management",
 		Description: "Fee structures, invoices and payments."}
 	ModuleExams = ModuleInfo{Key: "exams", Name: "Examination Management",
-		Description: "Examinations, schedules and results."}
+		Description: "Examinations, timetables and schedules."}
 	ModuleNotices = ModuleInfo{Key: "notices", Name: "Notice Board",
 		Description: "School announcements and notices."}
 )
@@ -228,6 +228,7 @@ type AdminDashboard struct {
 	AccountGrowth    Section[[]AccountGrowthPoint] `json:"account_growth"`
 	Academic         AcademicOverview              `json:"academic"`
 	Attendance       Section[AttendanceSummary]    `json:"attendance"`
+	Examinations     Section[ExamSummary]          `json:"examinations"`
 	Fees             Section[FeeSummary]           `json:"fees"`
 	RecentAdmissions Section[[]Admission]          `json:"recent_admissions"`
 	RecentNotices    Section[[]Notice]             `json:"recent_notices"`

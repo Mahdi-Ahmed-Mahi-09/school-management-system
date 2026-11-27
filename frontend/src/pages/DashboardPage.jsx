@@ -91,6 +91,11 @@ function MemberDashboard() {
           <QuickLink to="/attendance" icon={CalendarCheck2} title="My sections today" description="See which sections are done and which are pending" />
         </div>
       )}
+      {can(PERMISSIONS.EXAM_TIMETABLES_READ) && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <QuickLink to="/exam-timetables" icon={CalendarClock} title="Exam timetables" description="Published examination schedules of your classes" />
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <QuickLink to="/profile" icon={UserRound} title="Edit your profile" description="Update your name and contact details" />

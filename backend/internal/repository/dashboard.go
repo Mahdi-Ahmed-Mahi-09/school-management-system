@@ -53,6 +53,10 @@ type DashboardSnapshot struct {
 
 	// Today's student attendance in the current academic year (Feature 10).
 	Attendance models.AttendanceSummary
+
+	// Published examinations of the current year, the next ones to finish and
+	// the most recently created ones (Feature 11).
+	Exams models.ExamSummary
 }
 
 // DashboardRepository reads aggregated dashboard data.

@@ -96,6 +96,12 @@ export const PERMISSIONS = {
   ATTENDANCE_CORRECT: 'attendance:correct',
   ATTENDANCE_REPORTS: 'attendance:reports',
   ATTENDANCE_EXPORT: 'attendance:export',
+  EXAMS_READ: 'examinations:read',
+  EXAMS_CREATE: 'examinations:create',
+  EXAMS_UPDATE: 'examinations:update',
+  EXAMS_DELETE: 'examinations:delete',
+  EXAMS_PUBLISH: 'examinations:publish',
+  EXAM_TIMETABLES_READ: 'exam_timetables:read',
 }
 
 export const PERMISSION_LABELS = {
@@ -136,4 +142,10 @@ export const PERMISSION_LABELS = {
   'attendance:correct': 'Correct attendance of earlier days',
   'attendance:reports': 'View attendance reports',
   'attendance:export': 'Export attendance as CSV',
+  'examinations:read': 'View examinations',
+  'examinations:create': 'Create examinations and examination types',
+  'examinations:update': 'Edit examinations, their classes and schedules',
+  'examinations:delete': 'Delete draft examinations',
+  'examinations:publish': 'Publish, complete and cancel examinations',
+  'exam_timetables:read': 'View examination timetables of your classes',
 }

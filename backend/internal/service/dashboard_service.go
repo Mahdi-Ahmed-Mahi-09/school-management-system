@@ -28,7 +28,7 @@ var implementedModules = map[string]bool{
 	models.ModuleTeachers.Key:      true, // Feature 04
 	models.ModuleAttendance.Key:    true, // Feature 10
 	models.ModuleFees.Key:          false,
-	models.ModuleExams.Key:         false,
+	models.ModuleExams.Key:         true, // Feature 11
 	models.ModuleNotices.Key:       false,
 }
 
@@ -131,7 +131,9 @@ func (s *DashboardService) AdminDashboard(ctx context.Context) (*models.AdminDas
 			ClassDistribution: models.Available(classDistribution(snap.ClassDistribution)),
 		},
 		// Today's attendance in the current academic year (Feature 10).
-		Attendance:       models.Available(attendanceToday(snap.Attendance, today)),
+		Attendance: models.Available(attendanceToday(snap.Attendance, today)),
+		// Examinations and published timetables (Feature 11).
+		Examinations:     models.Available(examSummary(snap.Exams)),
 		Fees:             models.Unavailable[models.FeeSummary](models.ModuleFees),
 		RecentAdmissions: models.Available(snap.RecentAdmissions),
 		RecentNotices:    models.Unavailable[[]models.Notice](models.ModuleNotices),
@@ -157,4 +159,15 @@ func academicYearSection(current *models.AcademicYear, today time.Time) models.S
 func attendanceToday(a models.AttendanceSummary, today time.Time) models.AttendanceSummary {
 	a.Date = today.Format(models.DateLayout)
 	return a
+}
+
+// examSummary makes sure the lists serialise as [] rather than null.
+func examSummary(e models.ExamSummary) models.ExamSummary {
+	if e.Upcoming == nil {
+		e.Upcoming = []models.ExamItem{}
+	}
+	if e.Recent == nil {
+		e.Recent = []models.ExamItem{}
+	}
+	return e
 }

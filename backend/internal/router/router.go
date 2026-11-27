@@ -38,6 +38,7 @@ type Deps struct {
 	PromotionService    *service.PromotionService
 	TeacherAssignments  *service.TeacherAssignmentService
 	Attendance          *service.AttendanceService
+	Examinations        *service.ExaminationService
 	Cookie              handler.CookieConfig
 	AllowedOrigins      []string
 	LoginRateLimit      int
@@ -78,6 +79,7 @@ func New(d Deps) *gin.Engine {
 	enrollH := handler.NewEnrollmentHandler(d.EnrollmentService, d.PromotionService)
 	assignH := handler.NewTeacherAssignmentHandler(d.TeacherAssignments)
 	attendanceH := handler.NewAttendanceHandler(d.Attendance)
+	examH := handler.NewExaminationHandler(d.Examinations)
 	loginLimiter := middleware.NewRateLimiter(d.LoginRateLimit, d.LoginRateWindow)
 
 	api := r.Group("/api/v1", middleware.CSRFGuard())
@@ -265,6 +267,44 @@ func New(d Deps) *gin.Engine {
 	attendanceAdmin.GET("/reports/class-wise", middleware.RequirePermission(models.PermAttendanceReports), attendanceH.ClassWiseReport)
 	attendanceAdmin.GET("/reports/student-wise", middleware.RequirePermission(models.PermAttendanceReports), attendanceH.StudentWiseReport)
 	attendanceAdmin.GET("/export", middleware.RequirePermission(models.PermAttendanceExport), attendanceH.Export)
+
+	// Examinations: admin role AND the specific permission are both required.
+	// Update covers classes and schedules; publish covers publish/complete/cancel.
+	exams := protected.Group("/examinations", middleware.RequireRoles(models.RoleAdmin))
+	exams.GET("", middleware.RequirePermission(models.PermExamsRead), examH.List)
+	exams.GET("/statistics", middleware.RequirePermission(models.PermExamsRead), examH.Stats)
+	exams.GET("/:id", middleware.RequirePermission(models.PermExamsRead), examH.Get)
+	exams.GET("/:id/history", middleware.RequirePermission(models.PermExamsRead), examH.History)
+	exams.GET("/:id/classes", middleware.RequirePermission(models.PermExamsRead), examH.Classes)
+	exams.GET("/:id/schedules", middleware.RequirePermission(models.PermExamsRead), examH.Classes)
+	exams.GET("/:id/publish-check", middleware.RequirePermission(models.PermExamsPublish), examH.PublishCheck)
+	exams.POST("", middleware.RequirePermission(models.PermExamsCreate), examH.Create)
+	exams.PUT("/:id", middleware.RequirePermission(models.PermExamsUpdate), examH.Update)
+	exams.DELETE("/:id", middleware.RequirePermission(models.PermExamsDelete), examH.Delete)
+	exams.POST("/:id/classes", middleware.RequirePermission(models.PermExamsUpdate), examH.AddClasses)
+	exams.DELETE("/:id/classes/:classId", middleware.RequirePermission(models.PermExamsUpdate), examH.RemoveClass)
+	exams.POST("/:id/schedules", middleware.RequirePermission(models.PermExamsUpdate), examH.AddSchedules)
+	exams.PUT("/:id/classes/:classId/schedules", middleware.RequirePermission(models.PermExamsUpdate), examH.ReplaceClassSchedule)
+	exams.PATCH("/:id/publish", middleware.RequirePermission(models.PermExamsPublish), examH.Publish)
+	exams.PATCH("/:id/complete", middleware.RequirePermission(models.PermExamsPublish), examH.Complete)
+	exams.PATCH("/:id/cancel", middleware.RequirePermission(models.PermExamsPublish), examH.Cancel)
+
+	examSchedules := protected.Group("/examination-schedules", middleware.RequireRoles(models.RoleAdmin))
+	examSchedules.PUT("/:id", middleware.RequirePermission(models.PermExamsUpdate), examH.UpdateSchedule)
+	examSchedules.DELETE("/:id", middleware.RequirePermission(models.PermExamsUpdate), examH.DeleteSchedule)
+
+	examTypes := protected.Group("/exam-types", middleware.RequireRoles(models.RoleAdmin))
+	examTypes.GET("", middleware.RequirePermission(models.PermExamsRead), examH.Types)
+	examTypes.POST("", middleware.RequirePermission(models.PermExamsCreate), examH.CreateType)
+	examTypes.PUT("/:id", middleware.RequirePermission(models.PermExamsUpdate), examH.UpdateType)
+	examTypes.DELETE("/:id", middleware.RequirePermission(models.PermExamsDelete), examH.DeleteType)
+
+	// Timetables: read-only for admins and teachers. The service limits
+	// teachers to published/past examinations of the classes they teach.
+	timetables := protected.Group("", middleware.RequireRoles(models.RoleAdmin, models.RoleTeacher), middleware.RequirePermission(models.PermExamTimetablesRead))
+	timetables.GET("/exam-timetables", examH.Timetables)
+	timetables.GET("/examinations/:id/timetable", examH.Timetable)
+	timetables.GET("/examinations/:id/classes/:classId/timetable", examH.ClassTimetable)
 
 	return r
 }

@@ -217,6 +217,44 @@ export const attendanceApi = {
   export: (params) => api.get('/attendance/export', { params, responseType: 'blob', timeout: 60000 }),
 }
 
+export const examinationsApi = {
+  /** Resolves to `{ exams, meta }`. */
+  list: (params, { signal } = {}) =>
+    api.get('/examinations', { params, signal }).then((res) => ({ exams: res.data.data, meta: res.data.meta })),
+  /** Counts for one academic year (default: current). */
+  stats: (params) => api.get('/examinations/statistics', { params }).then(unwrap),
+  /** The examination with `classes` (subjects the class takes, and its schedule). */
+  get: (id) => api.get(`/examinations/${id}`).then(unwrap),
+  create: (payload) => api.post('/examinations', payload).then(unwrap),
+  /** `reason` is required once the examination is published. */
+  update: (id, payload) => api.put(`/examinations/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/examinations/${id}`).then(unwrap),
+  history: (id) => api.get(`/examinations/${id}/history`).then(unwrap),
+  addClasses: (id, classIds) => api.post(`/examinations/${id}/classes`, { class_ids: classIds }).then(unwrap),
+  removeClass: (id, classId) => api.delete(`/examinations/${id}/classes/${classId}`).then(unwrap),
+  /** Saves a class's whole schedule: `items` with `id`/`version` for existing papers. */
+  saveClassSchedule: (id, classId, payload) => api.put(`/examinations/${id}/classes/${classId}/schedules`, payload).then(unwrap),
+  updateSchedule: (scheduleId, payload) => api.put(`/examination-schedules/${scheduleId}`, payload).then(unwrap),
+  removeSchedule: (scheduleId) => api.delete(`/examination-schedules/${scheduleId}`).then(unwrap),
+  /** `{ ready, issues, warnings, classes, papers }` without changing anything. */
+  publishCheck: (id) => api.get(`/examinations/${id}/publish-check`).then(unwrap),
+  publish: (id) => api.patch(`/examinations/${id}/publish`).then(unwrap),
+  complete: (id) => api.patch(`/examinations/${id}/complete`).then(unwrap),
+  cancel: (id, reason) => api.patch(`/examinations/${id}/cancel`, { reason }).then(unwrap),
+  /** Timetable for admins and (read-only, their classes) teachers. */
+  timetable: (id, params) => api.get(`/examinations/${id}/timetable`, { params }).then(unwrap),
+  /** Published/past examinations the caller can see; resolves to `{ exams, meta }`. */
+  timetables: (params, { signal } = {}) =>
+    api.get('/exam-timetables', { params, signal }).then((res) => ({ exams: res.data.data, meta: res.data.meta })),
+}
+
+export const examTypesApi = {
+  list: () => api.get('/exam-types').then(unwrap),
+  create: (payload) => api.post('/exam-types', payload).then(unwrap),
+  update: (id, payload) => api.put(`/exam-types/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/exam-types/${id}`).then(unwrap),
+}
+
 export const usersApi = {
   /** Resolves to `{ users, meta }`. */
   list: (params, { signal } = {}) =>

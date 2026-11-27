@@ -66,7 +66,9 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 		// Likewise for teacher assignments.
 		TeacherAssignments: service.NewTeacherAssignmentService(nil, teacherRepo, classStore.Classes(), activity),
 		// Likewise for attendance (scope and records live in PostgreSQL).
-		Attendance:      service.NewAttendanceService(nil, activity, time.UTC),
+		Attendance: service.NewAttendanceService(nil, activity, time.UTC),
+		// Likewise for examinations.
+		Examinations:    service.NewExaminationService(nil, activity, time.UTC),
 		Cookie:          handler.CookieConfig{Name: cookieName},
 		AllowedOrigins:  []string{"http://localhost:5173"},
 		LoginRateLimit:  loginLimit,

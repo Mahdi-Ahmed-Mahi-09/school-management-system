@@ -139,6 +139,9 @@ func (r *PostgresDashboardRepository) AdminSnapshot(ctx context.Context, q Dashb
 		if err := attendanceSnapshot(ctx, tx, q, snap); err != nil {
 			return err
 		}
+		if err := examSnapshot(ctx, tx, q, snap); err != nil {
+			return err
+		}
 
 		// 3. Recent activity with the actor's current name (one join, no N+1).
 		rows, err = tx.Query(ctx, `
@@ -194,6 +197,51 @@ func attendanceSnapshot(ctx context.Context, tx pgx.Tx, q DashboardQuery, snap *
 		       count(*) FILTER (WHERE status = 'late'), count(*) FILTER (WHERE status = 'leave')
 		FROM student_attendance WHERE academic_year_id = $1 AND attendance_date = $2`, year.ID, q.Today).
 		Scan(&snap.Attendance.Expected, &snap.Attendance.Present, &snap.Attendance.Absent, &snap.Attendance.Late, &snap.Attendance.Leave)
+}
+
+// examSnapshot lists examinations for the dashboard: the published count of
+// the current year, published examinations that haven't finished, and the
+// most recently created ones.
+func examSnapshot(ctx context.Context, tx pgx.Tx, q DashboardQuery, snap *DashboardSnapshot) error {
+	snap.Exams = models.ExamSummary{Upcoming: []models.ExamItem{}, Recent: []models.ExamItem{}}
+	year, err := currentYearRef(ctx, tx)
+	if err != nil {
+		return err
+	}
+	if year != nil {
+		if err := tx.QueryRow(ctx, `SELECT count(*) FROM examinations WHERE academic_year_id = $1 AND status = 'published'`, year.ID).
+			Scan(&snap.Exams.Published); err != nil {
+			return err
+		}
+	}
+	read := func(where, order string, args []any, into *[]models.ExamItem) error {
+		rows, err := tx.Query(ctx, `
+			SELECT x.id, x.name, t.name, y.name, x.start_date, x.end_date, x.status,
+			       (SELECT count(*) FROM examination_classes ec WHERE ec.examination_id = x.id)
+			FROM examinations x JOIN exam_types t ON t.id = x.exam_type_id JOIN academic_years y ON y.id = x.academic_year_id
+			WHERE `+where+` ORDER BY `+order+` LIMIT 5`, args...)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var (
+				it         models.ExamItem
+				start, end time.Time
+				status     string
+			)
+			if err := rows.Scan(&it.ID, &it.Name, &it.TypeName, &it.AcademicYear, &start, &end, &status, &it.Classes); err != nil {
+				return err
+			}
+			it.StartDate, it.EndDate, it.Status = start.Format(models.DateLayout), end.Format(models.DateLayout), models.ExamStatus(status)
+			*into = append(*into, it)
+		}
+		return rows.Err()
+	}
+	if err := read(`x.status = 'published' AND x.end_date >= $1`, `x.start_date, lower(x.name)`, []any{q.Today}, &snap.Exams.Upcoming); err != nil {
+		return err
+	}
+	return read(`TRUE`, `x.created_at DESC`, nil, &snap.Exams.Recent)
 }
 
 // studentSnapshot adds student metrics to the snapshot: totals, admissions

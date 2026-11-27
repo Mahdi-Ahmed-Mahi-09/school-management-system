@@ -20,7 +20,7 @@ const ACTIONS = [
   { label: 'Manage subjects', icon: BookOpen, module: 'subjects', to: '/subjects', permission: PERMISSIONS.SUBJECTS_READ },
   { label: 'Manage users', icon: Users, module: 'users', to: '/users', permission: PERMISSIONS.USERS_READ },
   { label: 'Take attendance', icon: ClipboardCheck, module: 'attendance', to: '/attendance/mark', permission: PERMISSIONS.ATTENDANCE_MARK },
-  { label: 'Create examination', icon: FilePenLine, module: 'exams' },
+  { label: 'Create examination', icon: FilePenLine, module: 'exams', to: '/examinations/new', permission: PERMISSIONS.EXAMS_CREATE },
   { label: 'Record payment', icon: Receipt, module: 'fees' },
   { label: 'Publish notice', icon: Megaphone, module: 'notices' },
 ]
