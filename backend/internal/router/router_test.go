@@ -68,7 +68,9 @@ func newTestServer(t *testing.T, loginLimit int) *testServer {
 		// Likewise for attendance (scope and records live in PostgreSQL).
 		Attendance: service.NewAttendanceService(nil, activity, time.UTC),
 		// Likewise for examinations.
-		Examinations:    service.NewExaminationService(nil, activity, time.UTC),
+		Examinations: service.NewExaminationService(nil, activity, time.UTC),
+		// Likewise for marks and results.
+		Results:         service.NewResultService(nil, nil, activity),
 		Cookie:          handler.CookieConfig{Name: cookieName},
 		AllowedOrigins:  []string{"http://localhost:5173"},
 		LoginRateLimit:  loginLimit,

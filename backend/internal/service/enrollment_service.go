@@ -158,6 +158,9 @@ func mapEnrollmentRepoError(err error) error {
 	case errors.Is(err, repository.ErrEnrollmentDateAfterAttendance):
 		msg := "Attendance is already recorded before this date. The enrollment date can't be later than the first recorded day."
 		return apperror.Conflict("ENROLLMENT_DATE_AFTER_ATTENDANCE", msg, map[string]string{"enrollment_date": msg})
+	case errors.Is(err, repository.ErrEnrollmentHasMarks):
+		return apperror.Conflict("ENROLLMENT_HAS_MARKS",
+			"Examination marks are recorded for this enrollment, so it can't be deleted. Withdraw the student instead to keep their results.", nil)
 	case errors.Is(err, repository.ErrEnrollmentInUse):
 		return apperror.Conflict("ENROLLMENT_IN_USE", "This enrollment is part of a promotion record, so it can't be deleted.", nil)
 	default:

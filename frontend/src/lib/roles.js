@@ -102,6 +102,12 @@ export const PERMISSIONS = {
   EXAMS_DELETE: 'examinations:delete',
   EXAMS_PUBLISH: 'examinations:publish',
   EXAM_TIMETABLES_READ: 'exam_timetables:read',
+  MARKS_ENTER: 'marks:enter',
+  MARKS_CONFIGURE: 'marks:configure',
+  MARKS_VERIFY: 'marks:verify',
+  RESULTS_READ: 'results:read',
+  RESULTS_PROCESS: 'results:process',
+  RESULTS_PUBLISH: 'results:publish',
 }
 
 export const PERMISSION_LABELS = {
@@ -148,4 +154,10 @@ export const PERMISSION_LABELS = {
   'examinations:delete': 'Delete draft examinations',
   'examinations:publish': 'Publish, complete and cancel examinations',
   'exam_timetables:read': 'View examination timetables of your classes',
+  'marks:enter': 'Enter and submit marks for the subjects you teach',
+  'marks:configure': 'Configure full marks, pass marks and marking components',
+  'marks:verify': 'Verify, finalize and reopen marks',
+  'results:read': 'View results, merit lists and report cards',
+  'results:process': 'Process and verify results',
+  'results:publish': 'Publish and correct results',
 }

@@ -88,6 +88,16 @@ const (
 	PermExamsDelete        Permission = "examinations:delete"
 	PermExamsPublish       Permission = "examinations:publish"
 	PermExamTimetablesRead Permission = "exam_timetables:read"
+
+	// Marks and results. Teachers enter and submit marks for the papers and
+	// sections they teach (Feature 09); configuring, verifying, processing
+	// and publishing are administrative.
+	PermMarksEnter     Permission = "marks:enter"
+	PermMarksConfigure Permission = "marks:configure"
+	PermMarksVerify    Permission = "marks:verify"
+	PermResultsRead    Permission = "results:read"
+	PermResultsProcess Permission = "results:process"
+	PermResultsPublish Permission = "results:publish"
 )
 
 // selfService permissions are granted to every authenticated role.
@@ -146,10 +156,15 @@ var userAdministration = []Permission{
 	PermExamsUpdate,
 	PermExamsDelete,
 	PermExamsPublish,
+	PermMarksConfigure,
+	PermMarksVerify,
+	PermResultsRead,
+	PermResultsProcess,
+	PermResultsPublish,
 }
 
 // teaching permissions let teachers take attendance for their own sections.
-var teaching = []Permission{PermAttendanceRead, PermAttendanceMark, PermExamTimetablesRead}
+var teaching = []Permission{PermAttendanceRead, PermAttendanceMark, PermExamTimetablesRead, PermMarksEnter}
 
 // rolePermissions is the single source of truth for role-based access control.
 var rolePermissions = map[Role][]Permission{

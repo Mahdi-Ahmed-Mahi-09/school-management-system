@@ -251,6 +251,21 @@ Examinations of an academic year (Feature 05) for one or more classes (Feature 0
   - Writes lock the examination and the academic year's examination schedule; papers carry a version, so a concurrent change is reported (`EXAM_CHANGED`) instead of overwritten.
   - Classes, class subjects and subjects used by examinations can't be removed, and an academic year's dates can't shrink past its examinations. Enrollment and attendance data are never changed.
 
+### Feature 12 — Marks, Grades & Results
+
+Marks for the papers of published examinations (Feature 11), entered per section by administrators and by each subject's teacher (Feature 09) for enrolled students (Feature 08), graded with the Bangladesh grading system and processed into published results.
+
+- **Marking schemes** (`/results/:examId/configuration`): every paper starts from its subject's full and pass marks (Feature 07; 100/33% when the subject has none) and can be overridden for the examination without changing the subject. Optional components (Theory, MCQ, Practical, Assessment, …) are configured per paper; their maximums must add up to the full marks (checked by the API and a deferred database trigger). Once marks exist, changes need a reason, every sheet must be back in draft, components can only be renamed or resized, and maximums can't drop below marks already given.
+- **Marks entry** (`/marks`, `/marks/:scheduleId?section=`): pick an examination, then a paper and section; teachers only see the subjects and sections they teach. The table has one column per component (or a single marks column), an exam attendance switch (Present/Absent — separate from daily attendance), live totals, inline validation, progress, unmarked students highlighted (never given zero automatically) and a warning before leaving with unsaved changes. Saving is all-or-nothing: every record is validated and each failure is reported by row.
+- **Workflow:** draft → submitted (teacher or admin, every student marked) → verified → finalized (admins). Submitted marks are read-only for teachers; admins can return or reopen marks with a reason, which discards unpublished processed results. Every change to a saved mark is kept with its before/after values, reason and author.
+- **Grading:** percentage = obtained ÷ full × 100, compared exactly with the boundaries (marks are stored in hundredths, so 79.99% is an A, never rounded up to A+): 80 A+ 5.00, 70 A 4.00, 60 A- 3.50, 50 B 3.00, 40 C 2.00, 33 D 1.00, below 33 F 0.00. A subject fails when the student was absent (0 marks, absence recorded separately), scored below the paper's pass marks (even when the percentage would be a D) or earned F; a failed subject is always F/0.00.
+- **GPA:** sum of grade points ÷ number of subjects, rounded half up to two decimals (4.375 → 4.38). **If any subject is failed the GPA is 0.00, the grade F and the result FAIL.** The overall grade comes from the GPA (5.00 A+, ≥4.00 A, ≥3.50 A-, ≥3.00 B, ≥2.00 C, ≥1.00 D). No fourth-subject bonus. The database refuses a failed result with a GPA above 0.
+- **Processing** (`/results`): subject results (every paper of every student holding a place in an examination class), then overall results (totals, percentage, GPA, grade, class and section positions), verification and publication — each step from the results dashboard with a confirmation. Processing needs every sheet finalized and every student marked, runs in one transaction under the examination's lock, and can be repeated safely until publication. Results are snapshots (subject name, marks, grade) so later configuration changes don't alter them.
+- **Merit lists:** passed students only, by total marks then GPA; equal totals and GPAs share a position with standard competition ranking (1, 2, 2, 4); failed students get no position and are listed last. Class, section and whole-examination lists, with CSV and print.
+- **Publication:** publishing requires verified results and re-checks completeness and the fail rule; it records who published and when and stores a JSON snapshot of the published results. Published results can't be edited, reopened or reprocessed; an administrator starts a correction with a reason, reopens the affected marks, reprocesses and republishes (each publication keeps its own snapshot and reason).
+- **Dashboard and reports:** students, marks entered and pending, sheets finalized, results processed, passed, failed and published, pass percentage, average and highest GPA, highest marks (filterable by class and section); results with search and pass/fail filter; printable report cards (`/results/:examId/students/:studentId`) with subject grades, totals, GPA, grade, result, position and publication date (unpublished results are labelled and shown to administrators only); the student profile lists each examination result.
+- **Access:** teachers (`marks:enter`) can view and enter marks for their own papers and sections and submit them; configuring, verifying, processing, publishing and every result report are administrator-only. Enrollments with marks can't be deleted (`ENROLLMENT_HAS_MARKS`).
+
 ## Getting started
 
 ### 1. Database
@@ -438,6 +453,29 @@ Every `POST`, `PUT`, `PATCH` and `DELETE` request must include the header `X-Req
 | PATCH  | `/examinations/:id/publish`, `/complete`, `/cancel` | Admin (`examinations:publish`) | Status transitions (`reason` to cancel) |
 | GET    | `/exam-timetables`      | Admin, Teacher (`exam_timetables:read`) | Non-draft examinations the caller can see (teachers: their classes) |
 | GET    | `/examinations/:id/timetable`, `/examinations/:id/classes/:classId/timetable` | Admin, Teacher (`exam_timetables:read`) | Timetable (`class_id`, `date`); teachers: published/past, their classes, own papers marked |
+| GET    | `/mark-entry/examinations` | Admin, Teacher (`marks:enter`) | Published/completed examinations with marks to enter (teachers: with papers they teach) |
+| GET    | `/examinations/:id/mark-sheets` | Admin, Teacher (`marks:enter`) | Paper × section sheets with progress and status (teachers: their own) |
+| GET    | `/examination-schedules/:id/mark-configuration` | Admin, Teacher (`marks:enter`) | A paper's marking scheme (saved, or the subject's defaults) |
+| POST / PUT | `/examination-schedules/:id/mark-configuration` | Admin (`marks:configure`) | Save full/pass marks, instructions and components (`reason` once marks exist) |
+| GET    | `/examinations/:id/mark-configurations` | Admin (`marks:configure`) | Every paper with its scheme |
+| GET    | `/examination-schedules/:id/marks` | Admin, Teacher (`marks:enter`) | A section's students and marks (`section_id`) with what the caller may do |
+| POST   | `/examination-schedules/:id/marks` | Admin, Teacher (`marks:enter`) | One student's marks |
+| POST   | `/examination-schedules/:id/marks/bulk` | Admin, Teacher (`marks:enter`) | A section's marks in one transaction (`records[]` with `attendance`, `components` or `total`, `version`) |
+| PUT    | `/examination-marks/:id` | Admin, Teacher (`marks:enter`) | Change one saved mark (`version`, optional `reason`) |
+| GET    | `/examination-marks/:id/history` | Admin, Teacher (`marks:enter`) | Audited changes of a mark |
+| POST   | `/examination-schedules/:id/marks/submit` | Admin, Teacher (`marks:enter`) | Submit a section's marks for verification |
+| PATCH  | `/examination-schedules/:id/marks/verify`, `/finalize`, `/reopen` | Admin (`marks:verify`) | Workflow steps (`section_id`; `reason` to reopen) |
+| GET    | `/examinations/:id/marks-review` | Admin (`marks:verify`) | Every sheet of the examination |
+| POST   | `/examinations/:id/process-subject-results`, `/process-overall-results` | Admin (`results:process`) | Grade papers / compute GPAs and positions |
+| PATCH  | `/examinations/:id/verify-results` | Admin (`results:process`) | Mark processed results as reviewed |
+| POST   | `/examinations/:id/publish-results` | Admin (`results:publish`) | Publish verified results (snapshot) |
+| POST   | `/examinations/:id/correct-published-results` | Admin (`results:publish`) | Start an audited correction (`reason`) |
+| GET    | `/examinations/:id/result-status`, `/result-statistics` | Admin (`results:read`) | Stage, readiness issues, statistics (`class_id`, `section_id`), publications |
+| GET    | `/examinations/:id/results`, `/examinations/:id/classes/:classId/results` | Admin (`results:read`) | Overall results (`section_id`, `status`, `search`, paging) |
+| GET    | `/examinations/:id/merit-list`, `/examinations/:id/classes/:classId/merit-list` | Admin (`results:read`) | Ranked results with positions (`class_id`, `section_id`) |
+| GET    | `/examinations/:id/students/:studentId/report-card` | Admin (`results:read`) | One student's report card |
+| GET    | `/examination-results/:id` | Admin (`results:read`) | An overall result with its subject results |
+| GET    | `/students/:id/examination-results` | Admin (`results:read`) | A student's result history |
 
 ## Project structure
 

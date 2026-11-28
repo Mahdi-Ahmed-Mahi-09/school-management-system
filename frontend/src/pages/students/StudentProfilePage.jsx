@@ -26,6 +26,7 @@ import { DetailItem, DetailSection, PhoneLink, ProfileSkeleton } from '../../com
 import { useAuth } from '../../hooks/useAuth'
 import { StudentEnrollmentCard } from '../../components/enrollments/StudentEnrollmentCard'
 import { StudentAttendanceCard } from '../../components/attendance/StudentAttendanceCard'
+import { StudentResultsCard } from '../../components/results/StudentResultsCard'
 import { PERMISSIONS } from '../../lib/roles'
 import { ageOn, formatDateOnly, genderLabel } from '../../lib/students'
 import { formatDateTime } from '../../lib/utils'
@@ -187,6 +188,8 @@ export default function StudentProfilePage() {
       {can(PERMISSIONS.ENROLLMENTS_READ) && <StudentEnrollmentCard student={s} />}
 
       {can(PERMISSIONS.ATTENDANCE_READ) && <StudentAttendanceCard student={s} />}
+
+      {can(PERMISSIONS.RESULTS_READ) && <StudentResultsCard student={s} />}
 
       <DeleteStudentDialog
         student={s}

@@ -39,6 +39,7 @@ type Deps struct {
 	TeacherAssignments  *service.TeacherAssignmentService
 	Attendance          *service.AttendanceService
 	Examinations        *service.ExaminationService
+	Results             *service.ResultService
 	Cookie              handler.CookieConfig
 	AllowedOrigins      []string
 	LoginRateLimit      int
@@ -80,6 +81,7 @@ func New(d Deps) *gin.Engine {
 	assignH := handler.NewTeacherAssignmentHandler(d.TeacherAssignments)
 	attendanceH := handler.NewAttendanceHandler(d.Attendance)
 	examH := handler.NewExaminationHandler(d.Examinations)
+	resultH := handler.NewResultHandler(d.Results)
 	loginLimiter := middleware.NewRateLimiter(d.LoginRateLimit, d.LoginRateWindow)
 
 	api := r.Group("/api/v1", middleware.CSRFGuard())
@@ -305,6 +307,44 @@ func New(d Deps) *gin.Engine {
 	timetables.GET("/exam-timetables", examH.Timetables)
 	timetables.GET("/examinations/:id/timetable", examH.Timetable)
 	timetables.GET("/examinations/:id/classes/:classId/timetable", examH.ClassTimetable)
+
+	// Marks entry: admins and teachers. The service limits teachers to the
+	// subjects and sections they teach (Feature 09) and to drafts.
+	marks := protected.Group("", middleware.RequireRoles(models.RoleAdmin, models.RoleTeacher), middleware.RequirePermission(models.PermMarksEnter))
+	marks.GET("/mark-entry/examinations", resultH.MarkExams)
+	marks.GET("/examinations/:id/mark-sheets", resultH.Sheets)
+	marks.GET("/examination-schedules/:id/mark-configuration", resultH.Scheme)
+	marks.GET("/examination-schedules/:id/marks", resultH.Sheet)
+	marks.POST("/examination-schedules/:id/marks", resultH.SaveMark)
+	marks.POST("/examination-schedules/:id/marks/bulk", resultH.SaveMarks)
+	marks.POST("/examination-schedules/:id/marks/submit", resultH.SheetAction((*service.ResultService).Submit))
+	marks.PUT("/examination-marks/:id", resultH.UpdateMark)
+	marks.GET("/examination-marks/:id/history", resultH.MarkHistory)
+
+	// Marking schemes, verification, processing, publication and reports:
+	// admin role AND the specific permission are both required.
+	resultsAdmin := protected.Group("", middleware.RequireRoles(models.RoleAdmin))
+	resultsAdmin.GET("/examinations/:id/mark-configurations", middleware.RequirePermission(models.PermMarksConfigure), resultH.Schemes)
+	resultsAdmin.POST("/examination-schedules/:id/mark-configuration", middleware.RequirePermission(models.PermMarksConfigure), resultH.SaveScheme)
+	resultsAdmin.PUT("/examination-schedules/:id/mark-configuration", middleware.RequirePermission(models.PermMarksConfigure), resultH.SaveScheme)
+	resultsAdmin.GET("/examinations/:id/marks-review", middleware.RequirePermission(models.PermMarksVerify), resultH.Sheets)
+	resultsAdmin.PATCH("/examination-schedules/:id/marks/verify", middleware.RequirePermission(models.PermMarksVerify), resultH.SheetAction((*service.ResultService).Verify))
+	resultsAdmin.PATCH("/examination-schedules/:id/marks/finalize", middleware.RequirePermission(models.PermMarksVerify), resultH.SheetAction((*service.ResultService).Finalize))
+	resultsAdmin.PATCH("/examination-schedules/:id/marks/reopen", middleware.RequirePermission(models.PermMarksVerify), resultH.SheetAction((*service.ResultService).Reopen))
+	resultsAdmin.POST("/examinations/:id/process-subject-results", middleware.RequirePermission(models.PermResultsProcess), resultH.Step((*service.ResultService).ProcessSubjectResults))
+	resultsAdmin.POST("/examinations/:id/process-overall-results", middleware.RequirePermission(models.PermResultsProcess), resultH.Step((*service.ResultService).ProcessOverallResults))
+	resultsAdmin.PATCH("/examinations/:id/verify-results", middleware.RequirePermission(models.PermResultsProcess), resultH.Step((*service.ResultService).VerifyResults))
+	resultsAdmin.POST("/examinations/:id/publish-results", middleware.RequirePermission(models.PermResultsPublish), resultH.Step((*service.ResultService).PublishResults))
+	resultsAdmin.POST("/examinations/:id/correct-published-results", middleware.RequirePermission(models.PermResultsPublish), resultH.Correct)
+	resultsAdmin.GET("/examinations/:id/result-status", middleware.RequirePermission(models.PermResultsRead), resultH.Status)
+	resultsAdmin.GET("/examinations/:id/result-statistics", middleware.RequirePermission(models.PermResultsRead), resultH.Status)
+	resultsAdmin.GET("/examinations/:id/results", middleware.RequirePermission(models.PermResultsRead), resultH.Results)
+	resultsAdmin.GET("/examinations/:id/classes/:classId/results", middleware.RequirePermission(models.PermResultsRead), resultH.ClassResults)
+	resultsAdmin.GET("/examinations/:id/merit-list", middleware.RequirePermission(models.PermResultsRead), resultH.MeritList)
+	resultsAdmin.GET("/examinations/:id/classes/:classId/merit-list", middleware.RequirePermission(models.PermResultsRead), resultH.ClassMeritList)
+	resultsAdmin.GET("/examinations/:id/students/:studentId/report-card", middleware.RequirePermission(models.PermResultsRead), resultH.ReportCard)
+	resultsAdmin.GET("/examination-results/:id", middleware.RequirePermission(models.PermResultsRead), resultH.Result)
+	resultsAdmin.GET("/students/:id/examination-results", middleware.RequirePermission(models.PermResultsRead), resultH.StudentResults)
 
 	return r
 }

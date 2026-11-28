@@ -37,6 +37,13 @@ const ExaminationsPage = lazy(() => import('./pages/examinations/ExaminationsPag
 const ExamTimetablePage = lazy(() => import('./pages/examinations/ExamTimetablePage'))
 const ExamTimetablesPage = lazy(() => import('./pages/examinations/ExamTimetablesPage'))
 const ScheduleBuilderPage = lazy(() => import('./pages/examinations/ScheduleBuilderPage'))
+const ExamResultsPage = lazy(() => import('./pages/results/ExamResultsPage'))
+const MarkEntryPage = lazy(() => import('./pages/results/MarkEntryPage'))
+const MarkSchemesPage = lazy(() => import('./pages/results/MarkSchemesPage'))
+const MarksHomePage = lazy(() => import('./pages/results/MarksHomePage'))
+const MarksReviewPage = lazy(() => import('./pages/results/MarksReviewPage'))
+const ReportCardPage = lazy(() => import('./pages/results/ReportCardPage'))
+const ResultsDashboardPage = lazy(() => import('./pages/results/ResultsDashboardPage'))
 const ClassSubjectsPage = lazy(() => import('./pages/subjects/ClassSubjectsPage'))
 const SubjectDetailPage = lazy(() => import('./pages/subjects/SubjectDetailPage'))
 const SubjectsPage = lazy(() => import('./pages/subjects/SubjectsPage'))
@@ -92,6 +99,22 @@ export default function App() {
                   <Route path="teacher-assignments/:id" element={<TeacherAssignmentDetailPage />} />
                   <Route element={<RequireAccess permission={PERMISSIONS.TEACHER_ASSIGNMENTS_CREATE} />}>
                     <Route path="teacher-assignments/bulk" element={<BulkAssignPage />} />
+                  </Route>
+                </Route>
+                {/* Marks: admins and the teachers of each subject and section (the API enforces it). */}
+                <Route element={<RequireAccess permission={PERMISSIONS.MARKS_ENTER} roles={['admin', 'teacher']} />}>
+                  <Route path="marks" element={<MarksHomePage />} />
+                  <Route path="marks/:scheduleId" element={<MarkEntryPage />} />
+                </Route>
+                <Route element={<RequireAccess permission={PERMISSIONS.RESULTS_READ} roles={['admin']} />}>
+                  <Route path="results" element={<ResultsDashboardPage />} />
+                  <Route path="results/:examId/results" element={<ExamResultsPage />} />
+                  <Route path="results/:examId/students/:studentId" element={<ReportCardPage />} />
+                  <Route element={<RequireAccess permission={PERMISSIONS.MARKS_CONFIGURE} />}>
+                    <Route path="results/:examId/configuration" element={<MarkSchemesPage />} />
+                  </Route>
+                  <Route element={<RequireAccess permission={PERMISSIONS.MARKS_VERIFY} />}>
+                    <Route path="results/:examId/review" element={<MarksReviewPage />} />
                   </Route>
                 </Route>
                 {/* Examinations: managed by admins; timetables are read-only for teachers of the classes. */}

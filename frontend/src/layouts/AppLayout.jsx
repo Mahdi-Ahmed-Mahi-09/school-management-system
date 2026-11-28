@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, CalendarClock, FilePenLine, BookOpen, BookUser, CalendarCheck2, CalendarRange, ClipboardCheck, ClipboardList, History, Sparkles, ChevronsUpDown, ListChecks, GraduationCap, LayoutGrid, Rows3, KeyRound, Presentation, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
+import { Award, BarChart3, NotebookPen, CalendarClock, FilePenLine, BookOpen, BookUser, CalendarCheck2, CalendarRange, ClipboardCheck, ClipboardList, History, Sparkles, ChevronsUpDown, ListChecks, GraduationCap, LayoutGrid, Rows3, KeyRound, Presentation, LayoutDashboard, LogOut, Menu as MenuIcon, UserRound, Users, X } from 'lucide-react'
 import { Wordmark } from '../components/brand/Logo'
 import { Alert, Avatar } from '../components/ui/Display'
 import { Menu } from '../components/ui/Menu'
@@ -47,6 +47,8 @@ const NAV_SECTIONS = [
     items: [
       { to: '/examinations', label: 'Examinations', icon: FilePenLine, permission: PERMISSIONS.EXAMS_READ },
       { to: '/exam-timetables', label: 'Exam timetables', icon: CalendarClock, permission: PERMISSIONS.EXAM_TIMETABLES_READ },
+      { to: '/marks', label: 'Marks entry', icon: NotebookPen, permission: PERMISSIONS.MARKS_ENTER },
+      { to: '/results', label: 'Marks & results', icon: Award, permission: PERMISSIONS.RESULTS_READ, end: true },
     ],
   },
   {

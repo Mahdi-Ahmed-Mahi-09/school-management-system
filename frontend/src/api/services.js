@@ -255,6 +255,39 @@ export const examTypesApi = {
   remove: (id) => api.delete(`/exam-types/${id}`).then(unwrap),
 }
 
+export const resultsApi = {
+  /** Examinations with marks to enter (teachers: those with papers they teach); resolves to `{ exams, note }`. */
+  markExams: (params) => api.get('/mark-entry/examinations', { params }).then((res) => ({ exams: res.data.data, note: res.data.meta?.note })),
+  /** Mark sheets (paper × section) the caller can see, with progress and status. */
+  sheets: (examId) => api.get(`/examinations/${examId}/mark-sheets`).then(unwrap),
+  /** Every paper of an examination with its marking scheme (admin). */
+  schemes: (examId) => api.get(`/examinations/${examId}/mark-configurations`).then(unwrap),
+  scheme: (scheduleId) => api.get(`/examination-schedules/${scheduleId}/mark-configuration`).then(unwrap),
+  saveScheme: (scheduleId, payload) => api.put(`/examination-schedules/${scheduleId}/mark-configuration`, payload).then(unwrap),
+  /** A paper's marks for one section: `{ sheet, scheme, students, can_* }`. */
+  sheet: (scheduleId, sectionId) => api.get(`/examination-schedules/${scheduleId}/marks`, { params: { section_id: sectionId } }).then(unwrap),
+  /** Saves many students at once; all-or-nothing, with per-record errors. */
+  saveMarks: (scheduleId, payload) => api.post(`/examination-schedules/${scheduleId}/marks/bulk`, payload).then(unwrap),
+  markHistory: (markId) => api.get(`/examination-marks/${markId}/history`).then(unwrap),
+  submit: (scheduleId, sectionId) => api.post(`/examination-schedules/${scheduleId}/marks/submit`, { section_id: sectionId }).then(unwrap),
+  verify: (scheduleId, sectionId) => api.patch(`/examination-schedules/${scheduleId}/marks/verify`, { section_id: sectionId }).then(unwrap),
+  finalize: (scheduleId, sectionId) => api.patch(`/examination-schedules/${scheduleId}/marks/finalize`, { section_id: sectionId }).then(unwrap),
+  reopen: (scheduleId, sectionId, reason) => api.patch(`/examination-schedules/${scheduleId}/marks/reopen`, { section_id: sectionId, reason }).then(unwrap),
+  /** Stage, readiness issues, statistics and publications (`class_id`, `section_id` narrow the statistics). */
+  status: (examId, params) => api.get(`/examinations/${examId}/result-status`, { params }).then(unwrap),
+  processSubjects: (examId) => api.post(`/examinations/${examId}/process-subject-results`).then(unwrap),
+  processOverall: (examId) => api.post(`/examinations/${examId}/process-overall-results`).then(unwrap),
+  verifyResults: (examId) => api.patch(`/examinations/${examId}/verify-results`).then(unwrap),
+  publish: (examId) => api.post(`/examinations/${examId}/publish-results`).then(unwrap),
+  correct: (examId, reason) => api.post(`/examinations/${examId}/correct-published-results`, { reason }).then(unwrap),
+  /** Resolves to `{ results, meta }`. */
+  results: (examId, params, { signal } = {}) =>
+    api.get(`/examinations/${examId}/results`, { params, signal }).then((res) => ({ results: res.data.data, meta: res.data.meta })),
+  meritList: (examId, params) => api.get(`/examinations/${examId}/merit-list`, { params }).then(unwrap),
+  reportCard: (examId, studentId) => api.get(`/examinations/${examId}/students/${studentId}/report-card`).then(unwrap),
+  studentResults: (studentId) => api.get(`/students/${studentId}/examination-results`).then(unwrap),
+}
+
 export const usersApi = {
   /** Resolves to `{ users, meta }`. */
   list: (params, { signal } = {}) =>

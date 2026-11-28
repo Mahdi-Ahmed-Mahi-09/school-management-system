@@ -577,6 +577,13 @@ func (r *PostgresEnrollmentRepository) Delete(ctx context.Context, id uuid.UUID,
 		if recorded {
 			return ErrEnrollmentHasAttendance
 		}
+		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM student_exam_marks WHERE enrollment_id = $1)
+			OR EXISTS (SELECT 1 FROM exam_subject_results WHERE enrollment_id = $1)`, id).Scan(&recorded); err != nil {
+			return err
+		}
+		if recorded {
+			return ErrEnrollmentHasMarks
+		}
 		_, err = tx.Exec(ctx, `DELETE FROM student_enrollments WHERE id = $1`, id)
 		return err
 	})

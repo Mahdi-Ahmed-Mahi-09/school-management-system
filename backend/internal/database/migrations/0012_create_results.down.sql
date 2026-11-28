@@ -1,0 +1,13 @@
+DROP TABLE IF EXISTS exam_result_publications;
+DROP TABLE IF EXISTS exam_results;
+DROP TABLE IF EXISTS exam_subject_results;
+DROP TABLE IF EXISTS exam_result_runs;
+DROP TABLE IF EXISTS student_exam_mark_changes;
+DROP TABLE IF EXISTS student_exam_component_marks;
+DROP FUNCTION IF EXISTS student_exam_component_marks_check();
+DROP TABLE IF EXISTS student_exam_marks;
+DROP FUNCTION IF EXISTS student_exam_marks_check();
+DROP TABLE IF EXISTS exam_mark_sheets;
+DROP TABLE IF EXISTS exam_mark_components;
+DROP TABLE IF EXISTS exam_mark_schemes;
+DROP FUNCTION IF EXISTS exam_mark_scheme_check_components();

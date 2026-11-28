@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, CalendarCheck2, CalendarClock, Check, ClipboardCheck, KeyRound, ShieldCheck, UserRound } from 'lucide-react'
+import { ArrowUpRight, NotebookPen, CalendarCheck2, CalendarClock, Check, ClipboardCheck, KeyRound, ShieldCheck, UserRound } from 'lucide-react'
 import { DashboardSkeleton } from '../components/dashboard/DashboardSkeleton'
 import { Card, CardHeader, PageHeader, RoleBadge, StatusBadge } from '../components/ui/Display'
 import { useAuth } from '../hooks/useAuth'
@@ -94,6 +94,9 @@ function MemberDashboard() {
       {can(PERMISSIONS.EXAM_TIMETABLES_READ) && (
         <div className="grid gap-4 sm:grid-cols-2">
           <QuickLink to="/exam-timetables" icon={CalendarClock} title="Exam timetables" description="Published examination schedules of your classes" />
+          {can(PERMISSIONS.MARKS_ENTER) && (
+            <QuickLink to="/marks" icon={NotebookPen} title="Enter marks" description="Marks for the subjects and sections you teach" />
+          )}
         </div>
       )}
 

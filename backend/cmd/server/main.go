@@ -78,7 +78,9 @@ func run() error {
 	enrollmentSvc := service.NewEnrollmentService(repository.NewPostgresEnrollmentRepository(pool), studentRepo, activityRepo)
 	promotionSvc := service.NewPromotionService(repository.NewPostgresPromotionRepository(pool), activityRepo)
 	attendanceSvc := service.NewAttendanceService(repository.NewPostgresAttendanceRepository(pool), activityRepo, cfg.Timezone)
-	examinationSvc := service.NewExaminationService(repository.NewPostgresExaminationRepository(pool), activityRepo, cfg.Timezone)
+	examRepo := repository.NewPostgresExaminationRepository(pool)
+	examinationSvc := service.NewExaminationService(examRepo, activityRepo, cfg.Timezone)
+	resultSvc := service.NewResultService(repository.NewPostgresResultRepository(pool), examRepo, activityRepo)
 	classSubjectSvc := service.NewClassSubjectService(repository.NewPostgresClassSubjectRepository(pool), classRepo, subjectRepo, activityRepo)
 
 	engine := router.New(router.Deps{
@@ -97,6 +99,7 @@ func run() error {
 		TeacherAssignments:  teacherAssignmentSvc,
 		Attendance:          attendanceSvc,
 		Examinations:        examinationSvc,
+		Results:             resultSvc,
 		Cookie:              handler.CookieConfig{Name: cfg.CookieName, Secure: cfg.CookieSecure, Domain: cfg.CookieDomain},
 		AllowedOrigins:      cfg.CORSAllowedOrigins,
 		LoginRateLimit:      cfg.LoginRateLimit,
